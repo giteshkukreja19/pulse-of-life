@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useContext } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   DropdownMenu,
@@ -10,22 +10,27 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Menu, X, Heart, LogOut, User } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-// Mock authentication - in a real app, use a proper auth system
-const isLoggedIn = false; // Default to logged out state
+import { AuthContext } from "@/App";
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useContext(AuthContext);
   
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
+        <Link to={isAuthenticated ? "/dashboard" : "/login"} className="flex items-center gap-2">
           <div className="flex items-center justify-center bg-blood rounded-full w-10 h-10">
             <Heart className="text-white h-5 w-5" />
           </div>
@@ -38,25 +43,38 @@ export const Header = () => {
         {/* Desktop Navigation */}
         {!isMobile && (
           <nav className="flex items-center gap-8">
-            <Link to="/" className={isActive("/") ? "nav-link-active" : "nav-link"}>
-              Home
-            </Link>
-            <Link to="/request" className={isActive("/request") ? "nav-link-active" : "nav-link"}>
-              Request Blood
-            </Link>
-            <Link to="/donors" className={isActive("/donors") ? "nav-link-active" : "nav-link"}>
-              Find Donors
-            </Link>
-            <Link to="/about" className={isActive("/about") ? "nav-link-active" : "nav-link"}>
-              About Us
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/dashboard" className={isActive("/dashboard") ? "nav-link-active" : "nav-link"}>
+                  Dashboard
+                </Link>
+                <Link to="/request" className={isActive("/request") ? "nav-link-active" : "nav-link"}>
+                  Request Blood
+                </Link>
+                <Link to="/donors" className={isActive("/donors") ? "nav-link-active" : "nav-link"}>
+                  Find Donors
+                </Link>
+                <Link to="/about" className={isActive("/about") ? "nav-link-active" : "nav-link"}>
+                  About Us
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/about" className={isActive("/about") ? "nav-link-active" : "nav-link"}>
+                  About Us
+                </Link>
+                <Link to="/contact" className={isActive("/contact") ? "nav-link-active" : "nav-link"}>
+                  Contact
+                </Link>
+              </>
+            )}
           </nav>
         )}
         
         {/* Auth Buttons or User Menu */}
         {!isMobile && (
           <div className="flex items-center gap-4">
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2">
@@ -71,7 +89,10 @@ export const Header = () => {
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="cursor-pointer w-full">Profile</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer text-destructive flex items-center gap-2">
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-destructive flex items-center gap-2"
+                    onClick={handleLogout}
+                  >
                     <LogOut className="h-4 w-4" />
                     <span>Logout</span>
                   </DropdownMenuItem>
@@ -102,37 +123,58 @@ export const Header = () => {
       {isMobile && isOpen && (
         <div className="fixed inset-0 top-16 bg-white z-40 p-4">
           <nav className="flex flex-col space-y-4">
-            <Link 
-              to="/" 
-              className={`text-lg py-2 ${isActive("/") ? "nav-link-active" : "nav-link"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              Home
-            </Link>
-            <Link 
-              to="/request" 
-              className={`text-lg py-2 ${isActive("/request") ? "nav-link-active" : "nav-link"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              Request Blood
-            </Link>
-            <Link 
-              to="/donors" 
-              className={`text-lg py-2 ${isActive("/donors") ? "nav-link-active" : "nav-link"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              Find Donors
-            </Link>
-            <Link 
-              to="/about" 
-              className={`text-lg py-2 ${isActive("/about") ? "nav-link-active" : "nav-link"}`}
-              onClick={() => setIsOpen(false)}
-            >
-              About Us
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link 
+                  to="/dashboard" 
+                  className={`text-lg py-2 ${isActive("/dashboard") ? "nav-link-active" : "nav-link"}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  to="/request" 
+                  className={`text-lg py-2 ${isActive("/request") ? "nav-link-active" : "nav-link"}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Request Blood
+                </Link>
+                <Link 
+                  to="/donors" 
+                  className={`text-lg py-2 ${isActive("/donors") ? "nav-link-active" : "nav-link"}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Find Donors
+                </Link>
+                <Link 
+                  to="/about" 
+                  className={`text-lg py-2 ${isActive("/about") ? "nav-link-active" : "nav-link"}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  About Us
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link 
+                  to="/about" 
+                  className={`text-lg py-2 ${isActive("/about") ? "nav-link-active" : "nav-link"}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  About Us
+                </Link>
+                <Link 
+                  to="/contact" 
+                  className={`text-lg py-2 ${isActive("/contact") ? "nav-link-active" : "nav-link"}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Contact
+                </Link>
+              </>
+            )}
             
             <div className="border-t my-2 pt-4">
-              {isLoggedIn ? (
+              {isAuthenticated ? (
                 <>
                   <Link 
                     to="/dashboard" 
@@ -150,7 +192,10 @@ export const Header = () => {
                   </Link>
                   <button 
                     className="w-full mt-4 py-2 text-lg flex items-center gap-2 text-destructive"
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
                   >
                     <LogOut className="h-4 w-4" />
                     <span>Logout</span>

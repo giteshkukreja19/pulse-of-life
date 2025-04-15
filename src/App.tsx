@@ -75,7 +75,7 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={
-                isAuthenticated ? <Index /> : <Navigate to="/login" replace />
+                <Navigate to="/login" replace />
               } />
               <Route path="/about" element={<About />} />
               <Route path="/login" element={<Login />} />
