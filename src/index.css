@@ -5,19 +5,19 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 210 45% 23%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 210 45% 23%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 210 45% 23%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 355 78% 56%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 210 56% 45%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
@@ -30,7 +30,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 355 78% 56%;
 
     --radius: 0.5rem;
 
@@ -97,5 +97,31 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .hero-gradient {
+    @apply bg-gradient-to-br from-blood/90 via-blood to-navy;
+  }
+  
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-cream/80;
+  }
+  
+  .nav-link {
+    @apply text-base font-medium hover:text-blood transition duration-200;
+  }
+  
+  .nav-link-active {
+    @apply text-blood font-semibold;
+  }
+  
+  .btn-blood {
+    @apply bg-blood text-white hover:bg-blood-dark transition-colors;
+  }
+  
+  .btn-navy {
+    @apply bg-navy text-white hover:bg-navy-light transition-colors;
   }
 }
