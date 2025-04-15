@@ -1,9 +1,11 @@
 
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AuthContext, UserRole } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Card, 
   CardContent, 
@@ -17,23 +19,50 @@ import { LogIn, User, Heart, Hospital, ShieldCheck } from "lucide-react";
 
 const LoginForm = () => {
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+  const { toast } = useToast();
+  
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [activeTab, setActiveTab] = useState<UserRole>("donor");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent, role: string) => {
+  const handleSubmit = (e: React.FormEvent, role: UserRole) => {
     e.preventDefault();
-    // In a real app, handle authentication here
-    console.log(`${role} login form submitted`, formData);
     
-    // Navigate to dashboard after login
-    navigate("/dashboard");
+    // Validate form
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Attempt login using our context's login function
+    const success = login(formData.email, formData.password, role);
+    
+    if (success) {
+      toast({
+        title: "Success",
+        description: "You have been logged in successfully",
+      });
+      // Navigate to dashboard after login
+      navigate("/dashboard");
+    } else {
+      toast({
+        title: "Error",
+        description: "Invalid credentials",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -45,7 +74,7 @@ const LoginForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="donor">
+        <Tabs defaultValue="donor" onValueChange={(value) => setActiveTab(value as UserRole)}>
           <TabsList className="grid grid-cols-3 mb-6">
             <TabsTrigger value="donor" className="flex items-center gap-2">
               <Heart className="h-4 w-4" />

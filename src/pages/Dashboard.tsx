@@ -1,18 +1,21 @@
 
-import { useState } from "react";
+import { useContext } from "react";
+import { Navigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import DonorDashboard from "@/components/dashboard/DonorDashboard";
 import RecipientDashboard from "@/components/dashboard/RecipientDashboard";
 import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import HospitalDashboard from "@/components/dashboard/HospitalDashboard";
 import { useToast } from "@/hooks/use-toast";
-
-type UserRole = "donor" | "recipient" | "admin" | "hospital";
+import { AuthContext } from "@/App";
 
 const Dashboard = () => {
-  // In a real app, this would come from authentication
-  const [userRole] = useState<UserRole>("admin");
+  const { isAuthenticated, userRole } = useContext(AuthContext);
   const { toast } = useToast();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
   
   const handleActionSuccess = (action: string) => {
     toast({
@@ -39,6 +42,13 @@ const Dashboard = () => {
         
         {userRole === "hospital" && (
           <HospitalDashboard onActionSuccess={handleActionSuccess} />
+        )}
+        
+        {!userRole && (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold mb-4">Authentication Error</h2>
+            <p>Your user role could not be determined. Please log out and log in again.</p>
+          </div>
         )}
       </div>
     </MainLayout>
