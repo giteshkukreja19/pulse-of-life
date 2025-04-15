@@ -3,6 +3,7 @@ import { ReactNode, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import { useLocation } from "react-router-dom";
+import { Sidebar } from "./Sidebar";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -10,7 +11,7 @@ interface MainLayoutProps {
 
 const MainLayout = ({ children }: MainLayoutProps) => {
   const location = useLocation();
-  const [userRole] = useState<"donor" | "recipient" | "admin" | "hospital">("donor"); // This would come from auth context
+  const [userRole] = useState<"donor" | "recipient" | "admin" | "hospital">("admin"); // This would come from auth context
   
   // Check if the current page is a dashboard page
   const isDashboardPage = location.pathname === "/dashboard";
@@ -24,14 +25,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className={containerClass}>
-        {isDashboardPage && userRole === "admin" ? (
+        {isDashboardPage ? (
           <div className="flex flex-col md:flex-row">
-            <div className="w-full">
-              {children}
-            </div>
-          </div>
-        ) : isDashboardPage && userRole === "hospital" ? (
-          <div className="flex flex-col md:flex-row">
+            {(userRole === "admin" || userRole === "hospital") && (
+              <Sidebar userRole={userRole} />
+            )}
             <div className="w-full">
               {children}
             </div>
