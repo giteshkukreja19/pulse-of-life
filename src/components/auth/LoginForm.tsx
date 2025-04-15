@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,9 +12,11 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { LogIn } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LogIn, User, Heart, Hospital, ShieldCheck } from "lucide-react";
 
 const LoginForm = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -25,10 +27,13 @@ const LoginForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent, role: string) => {
     e.preventDefault();
     // In a real app, handle authentication here
-    console.log("Login form submitted", formData);
+    console.log(`${role} login form submitted`, formData);
+    
+    // Navigate to dashboard after login
+    navigate("/dashboard");
   };
 
   return (
@@ -36,48 +41,149 @@ const LoginForm = () => {
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
         <CardDescription className="text-center">
-          Enter your credentials to sign in to your account
+          Enter your credentials to sign in
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="name@example.com"
-              required
-              value={formData.email}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link 
-                to="/forgot-password" 
-                className="text-sm text-blood hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              required
-              value={formData.password}
-              onChange={handleInputChange}
-            />
-          </div>
-          <Button type="submit" className="w-full btn-blood flex gap-2">
-            <LogIn className="h-4 w-4" />
-            Sign In
-          </Button>
-        </form>
+        <Tabs defaultValue="donor">
+          <TabsList className="grid grid-cols-3 mb-6">
+            <TabsTrigger value="donor" className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              <span>Donor</span>
+            </TabsTrigger>
+            <TabsTrigger value="hospital" className="flex items-center gap-2">
+              <Hospital className="h-4 w-4" />
+              <span>Hospital</span>
+            </TabsTrigger>
+            <TabsTrigger value="admin" className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" />
+              <span>Admin</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="donor">
+            <form onSubmit={(e) => handleSubmit(e, 'donor')} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link 
+                    to="/forgot-password" 
+                    className="text-sm text-blood hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <Button type="submit" className="w-full btn-blood flex gap-2">
+                <LogIn className="h-4 w-4" />
+                Sign In as Donor
+              </Button>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="hospital">
+            <form onSubmit={(e) => handleSubmit(e, 'hospital')} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="hospital-email">Hospital Email</Label>
+                <Input
+                  id="hospital-email"
+                  name="email"
+                  type="email"
+                  placeholder="hospital@example.com"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="hospital-password">Password</Label>
+                  <Link 
+                    to="/forgot-password" 
+                    className="text-sm text-blood hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                  id="hospital-password"
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <Button type="submit" className="w-full btn-blood flex gap-2">
+                <LogIn className="h-4 w-4" />
+                Sign In as Hospital
+              </Button>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="admin">
+            <form onSubmit={(e) => handleSubmit(e, 'admin')} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="admin-email">Admin Email</Label>
+                <Input
+                  id="admin-email"
+                  name="email"
+                  type="email"
+                  placeholder="admin@example.com"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="admin-password">Password</Label>
+                  <Link 
+                    to="/forgot-password" 
+                    className="text-sm text-blood hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                  id="admin-password"
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <Button type="submit" className="w-full btn-blood flex gap-2">
+                <LogIn className="h-4 w-4" />
+                Sign In as Admin
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
       </CardContent>
       <CardFooter className="flex flex-col space-y-4">
         <div className="text-sm text-center">
