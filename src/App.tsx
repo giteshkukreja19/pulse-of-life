@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,11 +17,9 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import { toast } from "sonner";
 
-// Initialize Supabase client with fallback values for development
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Create supabase client only if URL and key are available
 let supabase: ReturnType<typeof createClient> | null = null;
 
 if (supabaseUrl && supabaseKey) {
@@ -31,7 +28,6 @@ if (supabaseUrl && supabaseKey) {
   console.error("Supabase configuration is missing. Please check your environment variables.");
 }
 
-// Create an authentication context
 export type UserRole = "donor" | "recipient" | "admin" | "hospital" | null;
 
 interface AuthContextType {
@@ -54,7 +50,6 @@ export const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
 });
 
-// Create a protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useContext(AuthContext);
   
@@ -79,7 +74,6 @@ const App = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Show an error message if Supabase configuration is missing
   useEffect(() => {
     if (!supabase) {
       setAuthError("Missing Supabase configuration. Please set up your environment variables.");
@@ -88,13 +82,11 @@ const App = () => {
     }
   }, []);
   
-  // Check if user is already authenticated
   useEffect(() => {
     const checkSession = async () => {
       setIsLoading(true);
       
       try {
-        // Skip session check if Supabase client isn't available
         if (!supabase) {
           setIsAuthenticated(false);
           setUserRole(null);
@@ -114,7 +106,6 @@ const App = () => {
         if (data.session) {
           setIsAuthenticated(true);
           
-          // Get user role from metadata
           const { data: userData } = await supabase.auth.getUser();
           if (userData.user) {
             const role = userData.user.user_metadata.role as UserRole;
@@ -136,13 +127,11 @@ const App = () => {
     if (supabase) {
       checkSession();
       
-      // Listen for auth changes
       const { data: authListener } = supabase.auth.onAuthStateChange(
         async (event, session) => {
           if (event === "SIGNED_IN" && session) {
             setIsAuthenticated(true);
             
-            // Get user role from metadata
             const { data: userData } = await supabase.auth.getUser();
             if (userData.user) {
               const role = userData.user.user_metadata.role as UserRole;
@@ -156,7 +145,6 @@ const App = () => {
       );
       
       return () => {
-        // Clean up auth listener
         if (authListener && authListener.subscription) {
           authListener.subscription.unsubscribe();
         }
@@ -164,13 +152,11 @@ const App = () => {
     }
   }, []);
   
-  // Authentication methods
   const login = async (email: string, password: string, role: UserRole) => {
     setIsLoading(true);
     setAuthError(null);
     
     try {
-      // Check if Supabase client is available
       if (!supabase) {
         setAuthError("Supabase client is not initialized. Please check your configuration.");
         toast.error("Supabase client is not initialized. Please check your configuration.");
@@ -185,17 +171,19 @@ const App = () => {
       if (error) {
         console.error("Login error:", error);
         setAuthError(error.message);
+        toast.error(error.message);
         return false;
       }
       
       if (data.user) {
         setIsAuthenticated(true);
         
-        // Verify user role matches what they're trying to log in as
         const userRole = data.user.user_metadata.role;
         
         if (userRole !== role) {
-          setAuthError(`You're trying to log in as ${role}, but your account is registered as ${userRole}`);
+          const errorMsg = `You're trying to log in as ${role}, but your account is registered as ${userRole}`;
+          setAuthError(errorMsg);
+          toast.error(errorMsg);
           await supabase.auth.signOut();
           setIsAuthenticated(false);
           setUserRole(null);
@@ -210,6 +198,7 @@ const App = () => {
     } catch (error) {
       console.error("Login error:", error);
       setAuthError("An unexpected error occurred");
+      toast.error("An unexpected error occurred during login");
       return false;
     } finally {
       setIsLoading(false);
@@ -221,14 +210,12 @@ const App = () => {
     setAuthError(null);
     
     try {
-      // Check if Supabase client is available
       if (!supabase) {
         setAuthError("Supabase client is not initialized. Please check your configuration.");
         toast.error("Supabase client is not initialized. Please check your configuration.");
         return false;
       }
       
-      // Add role to user metadata
       const userMetadata = {
         ...metadata,
         role,
@@ -248,13 +235,11 @@ const App = () => {
         return false;
       }
       
-      // In most Supabase projects, email confirmation is required before login
       if (data.user && data.user.identities && data.user.identities.length === 0) {
         setAuthError("This email is already registered. Please log in instead.");
         return false;
       }
       
-      // Add user profile data to profiles table
       if (data.user) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -270,8 +255,6 @@ const App = () => {
         
         if (profileError) {
           console.error("Error creating profile:", profileError);
-          // The user is created but the profile failed to be created
-          // In a production app, you'd want to handle this case better
         }
       }
       
@@ -289,7 +272,6 @@ const App = () => {
     setIsLoading(true);
     
     try {
-      // Check if Supabase client is available
       if (!supabase) {
         setAuthError("Supabase client is not initialized. Please check your configuration.");
         toast.error("Supabase client is not initialized. Please check your configuration.");
