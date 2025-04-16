@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -227,21 +226,48 @@ const App = () => {
       }
       
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([{ 
-            id: data.user.id,
-            name: metadata.name,
-            email: email,
-            role: role,
-            phone: metadata.phone,
-            blood_group: metadata.bloodGroup,
-            age: metadata.age
-          }]);
-        
-        if (profileError) {
-          console.error("Error creating profile:", profileError);
+        if (role === 'donor' || role === 'recipient' || role === 'admin') {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([{ 
+              id: data.user.id,
+              name: metadata.name,
+              email: email,
+              role: role,
+              phone: metadata.phone,
+              blood_group: metadata.bloodGroup,
+              age: metadata.age,
+              gender: metadata.gender || null,
+              location: metadata.location || null
+            }]);
+          
+          if (profileError) {
+            console.error("Error creating profile:", profileError);
+            toast.error("Error creating user profile");
+          }
+        } else if (role === 'hospital') {
+          const { error: hospitalError } = await supabase
+            .from('hospitals')
+            .insert([{ 
+              id: data.user.id,
+              hospital_name: metadata.name,
+              email: email,
+              location: `${metadata.address}, ${metadata.city}, ${metadata.state}`,
+              license_number: metadata.licenseNumber,
+              is_verified: false
+            }]);
+          
+          if (hospitalError) {
+            console.error("Error creating hospital:", hospitalError);
+            toast.error("Error creating hospital profile");
+          }
         }
+      }
+      
+      if (role === 'hospital') {
+        toast.success("Registration successful! Your hospital account is pending admin approval.");
+      } else {
+        toast.success("Registration successful! Please check your email for verification and then log in.");
       }
       
       return true;
