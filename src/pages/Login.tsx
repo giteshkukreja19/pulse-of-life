@@ -1,13 +1,20 @@
 
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginForm from "@/components/auth/LoginForm";
 import MainLayout from "@/components/layout/MainLayout";
 import { AuthContext } from "@/App";
+import { toast } from "sonner";
 
 const Login = () => {
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, authError } = useContext(AuthContext);
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (authError) {
+      toast.error(authError);
+    }
+  }, [authError]);
   
   // If user is already authenticated, redirect to dashboard
   if (isAuthenticated) {

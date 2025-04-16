@@ -1,9 +1,10 @@
-
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { 
   Select,
   SelectContent,
@@ -26,6 +27,8 @@ const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 const RegisterForm = () => {
   const [activeTab, setActiveTab] = useState("donor");
+  const navigate = useNavigate();
+  const { register, isLoading } = useContext(AuthContext);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -46,10 +49,41 @@ const RegisterForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, handle registration here
-    console.log(`${activeTab} registration form submitted`, formData);
+    
+    // Form validation
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    
+    try {
+      // Register user using our context's register function
+      const success = await register(
+        formData.email,
+        formData.password,
+        activeTab as any,
+        {
+          name: formData.name,
+          phone: formData.phone,
+          bloodGroup: formData.bloodGroup,
+          age: formData.age
+        }
+      );
+      
+      if (success) {
+        toast.success("Registration successful! You can now log in.");
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+    }
   };
 
   return (
@@ -57,7 +91,7 @@ const RegisterForm = () => {
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
         <CardDescription className="text-center">
-          Join Plus of Life and help save lives
+          Join Pulse of Life and help save lives
         </CardDescription>
       </CardHeader>
       
@@ -176,8 +210,16 @@ const RegisterForm = () => {
                 </div>
               </div>
               
-              <Button type="submit" className="w-full btn-blood flex gap-2">
-                <UserPlus className="h-4 w-4" />
+              <Button 
+                type="submit" 
+                className="w-full btn-blood flex gap-2"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
                 Register as Donor
               </Button>
             </form>
@@ -283,8 +325,16 @@ const RegisterForm = () => {
                 </div>
               </div>
               
-              <Button type="submit" className="w-full btn-blood flex gap-2">
-                <UserPlus className="h-4 w-4" />
+              <Button 
+                type="submit" 
+                className="w-full btn-blood flex gap-2"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
                 Register as Recipient
               </Button>
             </form>
@@ -308,7 +358,7 @@ const RegisterForm = () => {
           </div>
         </div>
         <div className="flex flex-col space-y-2">
-          <Button variant="outline" className="w-full gap-2">
+          <Button variant="outline" className="w-full gap-2" onClick={() => toast.error("Google signup not implemented yet")}>
             <svg role="img" viewBox="0 0 24 24" className="h-4 w-4">
               <path
                 fill="currentColor"

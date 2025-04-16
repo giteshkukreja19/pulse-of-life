@@ -1,11 +1,10 @@
-
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext, UserRole } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { 
   Card, 
   CardContent, 
@@ -19,8 +18,7 @@ import { LogIn, User, Heart, Hospital, ShieldCheck } from "lucide-react";
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
-  const { toast } = useToast();
+  const { login, isLoading } = useContext(AuthContext);
   
   const [formData, setFormData] = useState({
     email: "",
@@ -33,35 +31,26 @@ const LoginForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent, role: UserRole) => {
+  const handleSubmit = async (e: React.FormEvent, role: UserRole) => {
     e.preventDefault();
     
     // Validate form
     if (!formData.email || !formData.password) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
+      toast.error("Please fill in all fields");
       return;
     }
     
-    // Attempt login using our context's login function
-    const success = login(formData.email, formData.password, role);
-    
-    if (success) {
-      toast({
-        title: "Success",
-        description: "You have been logged in successfully",
-      });
-      // Navigate to dashboard after login
-      navigate("/dashboard");
-    } else {
-      toast({
-        title: "Error",
-        description: "Invalid credentials",
-        variant: "destructive",
-      });
+    try {
+      // Attempt login using our context's login function
+      const success = await login(formData.email, formData.password, role);
+      
+      if (success) {
+        toast.success("You have been logged in successfully");
+        // Navigate to dashboard after login
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
     }
   };
 
@@ -124,8 +113,16 @@ const LoginForm = () => {
                   onChange={handleInputChange}
                 />
               </div>
-              <Button type="submit" className="w-full btn-blood flex gap-2">
-                <LogIn className="h-4 w-4" />
+              <Button 
+                type="submit" 
+                className="w-full btn-blood flex gap-2"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+                ) : (
+                  <LogIn className="h-4 w-4" />
+                )}
                 Sign In as Donor
               </Button>
             </form>
@@ -165,8 +162,16 @@ const LoginForm = () => {
                   onChange={handleInputChange}
                 />
               </div>
-              <Button type="submit" className="w-full btn-blood flex gap-2">
-                <LogIn className="h-4 w-4" />
+              <Button 
+                type="submit" 
+                className="w-full btn-blood flex gap-2"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+                ) : (
+                  <LogIn className="h-4 w-4" />
+                )}
                 Sign In as Hospital
               </Button>
             </form>
@@ -206,8 +211,16 @@ const LoginForm = () => {
                   onChange={handleInputChange}
                 />
               </div>
-              <Button type="submit" className="w-full btn-blood flex gap-2">
-                <LogIn className="h-4 w-4" />
+              <Button 
+                type="submit" 
+                className="w-full btn-blood flex gap-2"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+                ) : (
+                  <LogIn className="h-4 w-4" />
+                )}
                 Sign In as Admin
               </Button>
             </form>
@@ -230,7 +243,7 @@ const LoginForm = () => {
           </div>
         </div>
         <div className="flex flex-col space-y-2">
-          <Button variant="outline" className="w-full gap-2">
+          <Button variant="outline" className="w-full gap-2" onClick={() => toast.error("Google login not implemented yet")}>
             <svg role="img" viewBox="0 0 24 24" className="h-4 w-4">
               <path
                 fill="currentColor"
