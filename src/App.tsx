@@ -68,6 +68,26 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const queryClient = new QueryClient();
 
+const testSupabaseConnection = async (supabase: ReturnType<typeof createClient>) => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error("Supabase connection test failed:", error);
+      toast.error("Supabase connection test failed. Check your configuration.");
+      return false;
+    }
+    
+    console.log("Supabase connection successful!");
+    toast.success("Supabase connection established successfully.");
+    return true;
+  } catch (error) {
+    console.error("Unexpected error in Supabase connection test:", error);
+    toast.error("Unexpected error in Supabase connection test.");
+    return false;
+  }
+};
+
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>(null);
@@ -75,7 +95,9 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (!supabase) {
+    if (supabase) {
+      testSupabaseConnection(supabase);
+    } else {
       setAuthError("Missing Supabase configuration. Please set up your environment variables.");
       setIsLoading(false);
       toast.error("Missing Supabase configuration. Please set up your environment variables.");
