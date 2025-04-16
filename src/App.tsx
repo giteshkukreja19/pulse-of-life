@@ -41,7 +41,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<boolean>;
   register: (email: string, password: string, role: UserRole, metadata: any) => Promise<boolean>;
-  logout: async () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
