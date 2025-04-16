@@ -16,11 +16,20 @@ import FindDonors from "./pages/FindDonors";
 import Profile from "./pages/Profile";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import { toast } from "sonner";
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Initialize Supabase client with fallback values for development
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+// Create supabase client only if URL and key are available
+let supabase: ReturnType<typeof createClient> | null = null;
+
+if (supabaseUrl && supabaseKey) {
+  supabase = createClient(supabaseUrl, supabaseKey);
+} else {
+  console.error("Supabase configuration is missing. Please check your environment variables.");
+}
 
 // Create an authentication context
 export type UserRole = "donor" | "recipient" | "admin" | "hospital" | null;
@@ -32,7 +41,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<boolean>;
   register: (email: string, password: string, role: UserRole, metadata: any) => Promise<boolean>;
-  logout: () => Promise<void>;
+  logout: async () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -70,12 +79,28 @@ const App = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Show an error message if Supabase configuration is missing
+  useEffect(() => {
+    if (!supabase) {
+      setAuthError("Missing Supabase configuration. Please set up your environment variables.");
+      setIsLoading(false);
+      toast.error("Missing Supabase configuration. Please set up your environment variables.");
+    }
+  }, []);
+  
   // Check if user is already authenticated
   useEffect(() => {
     const checkSession = async () => {
       setIsLoading(true);
       
       try {
+        // Skip session check if Supabase client isn't available
+        if (!supabase) {
+          setIsAuthenticated(false);
+          setUserRole(null);
+          return;
+        }
+        
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -108,33 +133,35 @@ const App = () => {
       }
     };
     
-    checkSession();
-    
-    // Listen for auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session) {
-          setIsAuthenticated(true);
-          
-          // Get user role from metadata
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const role = userData.user.user_metadata.role as UserRole;
-            setUserRole(role);
+    if (supabase) {
+      checkSession();
+      
+      // Listen for auth changes
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (event === "SIGNED_IN" && session) {
+            setIsAuthenticated(true);
+            
+            // Get user role from metadata
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+              const role = userData.user.user_metadata.role as UserRole;
+              setUserRole(role);
+            }
+          } else if (event === "SIGNED_OUT") {
+            setIsAuthenticated(false);
+            setUserRole(null);
           }
-        } else if (event === "SIGNED_OUT") {
-          setIsAuthenticated(false);
-          setUserRole(null);
         }
-      }
-    );
-    
-    return () => {
-      // Clean up auth listener
-      if (authListener && authListener.subscription) {
-        authListener.subscription.unsubscribe();
-      }
-    };
+      );
+      
+      return () => {
+        // Clean up auth listener
+        if (authListener && authListener.subscription) {
+          authListener.subscription.unsubscribe();
+        }
+      };
+    }
   }, []);
   
   // Authentication methods
@@ -143,6 +170,13 @@ const App = () => {
     setAuthError(null);
     
     try {
+      // Check if Supabase client is available
+      if (!supabase) {
+        setAuthError("Supabase client is not initialized. Please check your configuration.");
+        toast.error("Supabase client is not initialized. Please check your configuration.");
+        return false;
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -187,6 +221,13 @@ const App = () => {
     setAuthError(null);
     
     try {
+      // Check if Supabase client is available
+      if (!supabase) {
+        setAuthError("Supabase client is not initialized. Please check your configuration.");
+        toast.error("Supabase client is not initialized. Please check your configuration.");
+        return false;
+      }
+      
       // Add role to user metadata
       const userMetadata = {
         ...metadata,
@@ -248,6 +289,13 @@ const App = () => {
     setIsLoading(true);
     
     try {
+      // Check if Supabase client is available
+      if (!supabase) {
+        setAuthError("Supabase client is not initialized. Please check your configuration.");
+        toast.error("Supabase client is not initialized. Please check your configuration.");
+        return;
+      }
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
