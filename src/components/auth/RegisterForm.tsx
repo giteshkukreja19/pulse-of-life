@@ -1,3 +1,4 @@
+
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "@/App";
@@ -24,7 +25,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus, User, Heart, Building2 } from "lucide-react";
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const genders = ["Male", "Female", "Other", "Prefer not to say"];
 
 const RegisterForm = () => {
   const [activeTab, setActiveTab] = useState("donor");
@@ -39,8 +39,6 @@ const RegisterForm = () => {
     phone: "",
     bloodGroup: "",
     age: "",
-    gender: "",
-    location: "",
     address: "",
     city: "",
     state: "",
@@ -92,8 +90,6 @@ const RegisterForm = () => {
       if (activeTab === "donor" || activeTab === "recipient") {
         metadata.bloodGroup = formData.bloodGroup;
         metadata.age = formData.age;
-        metadata.gender = formData.gender;
-        metadata.location = formData.location;
       } else if (activeTab === "hospital") {
         metadata.address = formData.address;
         metadata.city = formData.city;
@@ -110,11 +106,7 @@ const RegisterForm = () => {
       );
       
       if (success) {
-        if (activeTab === "hospital") {
-          toast.success("Hospital registration submitted for admin approval. You'll be notified when approved.");
-        } else {
-          toast.success("Registration successful! Please check your email for verification and then log in.");
-        }
+        toast.success("Registration successful! Please check your email for verification and then log in.");
         navigate("/login");
       }
     } catch (error) {
@@ -250,37 +242,6 @@ const RegisterForm = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select 
-                    onValueChange={handleSelectChange("gender")}
-                    value={formData.gender}
-                  >
-                    <SelectTrigger id="gender">
-                      <SelectValue placeholder="Select Gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {genders.map((gender) => (
-                        <SelectItem key={gender} value={gender}>
-                          {gender}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    name="location"
-                    placeholder="City, State"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              
               <Button 
                 type="submit" 
                 className="w-full btn-blood flex gap-2"
@@ -393,37 +354,6 @@ const RegisterForm = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select 
-                    onValueChange={handleSelectChange("gender")}
-                    value={formData.gender}
-                  >
-                    <SelectTrigger id="gender">
-                      <SelectValue placeholder="Select Gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {genders.map((gender) => (
-                        <SelectItem key={gender} value={gender}>
-                          {gender}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    name="location"
-                    placeholder="City, State"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                  />
                 </div>
               </div>
               
@@ -569,9 +499,6 @@ const RegisterForm = () => {
                 )}
                 Register as Hospital
               </Button>
-              <p className="text-sm text-center text-muted-foreground mt-2">
-                Hospital accounts require admin approval before activation
-              </p>
             </form>
           </TabsContent>
         </Tabs>

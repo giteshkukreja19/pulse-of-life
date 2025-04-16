@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, createContext, useContext, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { createClient } from '@supabase/supabase-js';
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Login from "./pages/Login";
@@ -16,6 +16,17 @@ import Profile from "./pages/Profile";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import { toast } from "sonner";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+let supabase: ReturnType<typeof createClient> | null = null;
+
+if (supabaseUrl && supabaseKey) {
+  supabase = createClient(supabaseUrl, supabaseKey);
+} else {
+  console.error("Supabase configuration is missing. Please check your environment variables.");
+}
 
 export type UserRole = "donor" | "recipient" | "admin" | "hospital" | null;
 
@@ -57,7 +68,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const queryClient = new QueryClient();
 
-const testSupabaseConnection = async () => {
+const testSupabaseConnection = async (supabase: ReturnType<typeof createClient>) => {
   try {
     const { data, error } = await supabase.auth.getSession();
     
@@ -84,7 +95,13 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    testSupabaseConnection();
+    if (supabase) {
+      testSupabaseConnection(supabase);
+    } else {
+      setAuthError("Missing Supabase configuration. Please set up your environment variables.");
+      setIsLoading(false);
+      toast.error("Missing Supabase configuration. Please set up your environment variables.");
+    }
   }, []);
   
   useEffect(() => {
@@ -92,6 +109,12 @@ const App = () => {
       setIsLoading(true);
       
       try {
+        if (!supabase) {
+          setIsAuthenticated(false);
+          setUserRole(null);
+          return;
+        }
+        
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -123,30 +146,32 @@ const App = () => {
       }
     };
     
-    checkSession();
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session) {
-          setIsAuthenticated(true);
-          
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const role = userData.user.user_metadata.role as UserRole;
-            setUserRole(role);
+    if (supabase) {
+      checkSession();
+      
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (event === "SIGNED_IN" && session) {
+            setIsAuthenticated(true);
+            
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+              const role = userData.user.user_metadata.role as UserRole;
+              setUserRole(role);
+            }
+          } else if (event === "SIGNED_OUT") {
+            setIsAuthenticated(false);
+            setUserRole(null);
           }
-        } else if (event === "SIGNED_OUT") {
-          setIsAuthenticated(false);
-          setUserRole(null);
         }
-      }
-    );
-    
-    return () => {
-      if (authListener && authListener.subscription) {
-        authListener.subscription.unsubscribe();
-      }
-    };
+      );
+      
+      return () => {
+        if (authListener && authListener.subscription) {
+          authListener.subscription.unsubscribe();
+        }
+      };
+    }
   }, []);
   
   const login = async (email: string, password: string, role: UserRole) => {
@@ -154,6 +179,12 @@ const App = () => {
     setAuthError(null);
     
     try {
+      if (!supabase) {
+        setAuthError("Supabase client is not initialized. Please check your configuration.");
+        toast.error("Supabase client is not initialized. Please check your configuration.");
+        return false;
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -201,6 +232,12 @@ const App = () => {
     setAuthError(null);
     
     try {
+      if (!supabase) {
+        setAuthError("Supabase client is not initialized. Please check your configuration.");
+        toast.error("Supabase client is not initialized. Please check your configuration.");
+        return false;
+      }
+      
       const userMetadata = {
         ...metadata,
         role,
@@ -226,48 +263,21 @@ const App = () => {
       }
       
       if (data.user) {
-        if (role === 'donor' || role === 'recipient' || role === 'admin') {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([{ 
-              id: data.user.id,
-              name: metadata.name,
-              email: email,
-              role: role,
-              phone: metadata.phone,
-              blood_group: metadata.bloodGroup,
-              age: metadata.age,
-              gender: metadata.gender || null,
-              location: metadata.location || null
-            }]);
-          
-          if (profileError) {
-            console.error("Error creating profile:", profileError);
-            toast.error("Error creating user profile");
-          }
-        } else if (role === 'hospital') {
-          const { error: hospitalError } = await supabase
-            .from('hospitals')
-            .insert([{ 
-              id: data.user.id,
-              hospital_name: metadata.name,
-              email: email,
-              location: `${metadata.address}, ${metadata.city}, ${metadata.state}`,
-              license_number: metadata.licenseNumber,
-              is_verified: false
-            }]);
-          
-          if (hospitalError) {
-            console.error("Error creating hospital:", hospitalError);
-            toast.error("Error creating hospital profile");
-          }
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ 
+            id: data.user.id,
+            name: metadata.name,
+            email: email,
+            role: role,
+            phone: metadata.phone,
+            blood_group: metadata.bloodGroup,
+            age: metadata.age
+          }]);
+        
+        if (profileError) {
+          console.error("Error creating profile:", profileError);
         }
-      }
-      
-      if (role === 'hospital') {
-        toast.success("Registration successful! Your hospital account is pending admin approval.");
-      } else {
-        toast.success("Registration successful! Please check your email for verification and then log in.");
       }
       
       return true;
@@ -284,6 +294,12 @@ const App = () => {
     setIsLoading(true);
     
     try {
+      if (!supabase) {
+        setAuthError("Supabase client is not initialized. Please check your configuration.");
+        toast.error("Supabase client is not initialized. Please check your configuration.");
+        return;
+      }
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
