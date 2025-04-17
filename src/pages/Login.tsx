@@ -1,4 +1,3 @@
-
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginForm from "@/components/auth/LoginForm";
@@ -22,22 +21,19 @@ const Login = () => {
     }
   }, [authError]);
   
-  // Check if admin account exists and create it if not
   useEffect(() => {
     const checkAdminAccount = async () => {
       try {
-        // Try to sign in with admin credentials as a test
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: 'admin@pulseoflife.com',
+          email: 'gk7145@srmist.edu.in',
           password: 'pulseoflife'
         });
         
         if (error) {
           console.log('Admin login test failed:', error.message);
           
-          // If admin account doesn't exist, create it
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: 'admin@pulseoflife.com',
+            email: 'gk7145@srmist.edu.in',
             password: 'pulseoflife',
             options: {
               data: {
@@ -55,7 +51,6 @@ const Login = () => {
             toast.success('Admin account created. You can now log in as admin.');
           }
         } else if (data.user) {
-          // Admin account exists, sign out to allow regular login
           console.log('Admin account exists and credentials are valid');
           await supabase.auth.signOut();
           toast.success('Admin account verified. You can now log in.');
@@ -73,7 +68,6 @@ const Login = () => {
     }
   }, [adminAccountChecked, isAuthenticated]);
   
-  // If user is already authenticated, redirect to dashboard
   if (isAuthenticated) {
     navigate("/dashboard");
     return null;

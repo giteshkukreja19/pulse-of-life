@@ -1,4 +1,3 @@
-
 import { useContext, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import RegisterForm from "@/components/auth/RegisterForm";
@@ -32,7 +31,7 @@ const Register = () => {
         if (checkError) {
           // If we can't check users via admin API, try to sign in with admin credentials
           const { data: adminAuth } = await supabase.auth.signInWithPassword({
-            email: 'admin@pulseoflife.com',
+            email: 'gk7145@srmist.edu.in',
             password: 'pulseoflife'
           });
           
@@ -44,7 +43,7 @@ const Register = () => {
             return;
           }
         } else if (users && users.some(user => 
-          user.email === 'admin@pulseoflife.com' && 
+          user.email === 'gk7145@srmist.edu.in' && 
           user.user_metadata && 
           user.user_metadata.role === 'admin'
         )) {
@@ -54,7 +53,7 @@ const Register = () => {
         
         // Create admin account if it doesn't exist
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: 'admin@pulseoflife.com',
+          email: 'gk7145@srmist.edu.in',
           password: 'pulseoflife',
           options: {
             data: {
