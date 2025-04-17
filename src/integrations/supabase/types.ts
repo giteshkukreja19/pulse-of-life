@@ -9,7 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          age: number | null
+          blood_group: string | null
+          created_at: string
+          gender: string | null
+          id: string
+          is_verified: boolean | null
+          location: string | null
+          name: string | null
+          phone: string | null
+          role: string
+        }
+        Insert: {
+          age?: number | null
+          blood_group?: string | null
+          created_at?: string
+          gender?: string | null
+          id: string
+          is_verified?: boolean | null
+          location?: string | null
+          name?: string | null
+          phone?: string | null
+          role: string
+        }
+        Update: {
+          age?: number | null
+          blood_group?: string | null
+          created_at?: string
+          gender?: string | null
+          id?: string
+          is_verified?: boolean | null
+          location?: string | null
+          name?: string | null
+          phone?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

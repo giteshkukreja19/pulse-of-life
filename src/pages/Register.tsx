@@ -1,10 +1,10 @@
-
 import { useContext, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import RegisterForm from "@/components/auth/RegisterForm";
 import MainLayout from "@/components/layout/MainLayout";
 import { AuthContext } from "@/App";
 import { toast } from "sonner";
+import { supabase } from "@/supabase";
 
 const Register = () => {
   const { isAuthenticated, authError } = useContext(AuthContext);
@@ -15,7 +15,36 @@ const Register = () => {
     }
   }, [authError]);
   
-  // If user is already authenticated, redirect to dashboard
+  useEffect(() => {
+    const createAdminAccount = async () => {
+      const { data: adminCheck } = await supabase.auth.signInWithPassword({
+        email: 'admin@pulseoflife.com',
+        password: 'pulseoflife'
+      });
+
+      if (!adminCheck.user) {
+        const { error } = await supabase.auth.signUp({
+          email: 'admin@pulseoflife.com',
+          password: 'pulseoflife',
+          options: {
+            data: {
+              role: 'admin',
+              name: 'System Admin'
+            }
+          }
+        });
+
+        if (error) {
+          console.error('Error creating admin account:', error);
+        } else {
+          console.log('Admin account created successfully');
+        }
+      }
+    };
+
+    createAdminAccount();
+  }, []);
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" />;
   }

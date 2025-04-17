@@ -174,6 +174,51 @@ const App = () => {
     }
   }, []);
   
+  const register = async (email: string, password: string, role: UserRole, metadata: any) => {
+    setIsLoading(true);
+    setAuthError(null);
+    
+    try {
+      if (!supabase) {
+        setAuthError("Supabase client is not initialized. Please check your configuration.");
+        toast.error("Supabase client is not initialized. Please check your configuration.");
+        return false;
+      }
+
+      const userMetadata = {
+        ...metadata,
+        role,
+      };
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userMetadata,
+        },
+      });
+      
+      if (error) {
+        console.error("Registration error:", error);
+        setAuthError(error.message);
+        return false;
+      }
+      
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        setAuthError("This email is already registered. Please log in instead.");
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Registration error:", error);
+      setAuthError("An unexpected error occurred");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const login = async (email: string, password: string, role: UserRole) => {
     setIsLoading(true);
     setAuthError(null);
@@ -221,69 +266,6 @@ const App = () => {
       console.error("Login error:", error);
       setAuthError("An unexpected error occurred");
       toast.error("An unexpected error occurred during login");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const register = async (email: string, password: string, role: UserRole, metadata: any) => {
-    setIsLoading(true);
-    setAuthError(null);
-    
-    try {
-      if (!supabase) {
-        setAuthError("Supabase client is not initialized. Please check your configuration.");
-        toast.error("Supabase client is not initialized. Please check your configuration.");
-        return false;
-      }
-      
-      const userMetadata = {
-        ...metadata,
-        role,
-      };
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: userMetadata,
-        },
-      });
-      
-      if (error) {
-        console.error("Registration error:", error);
-        setAuthError(error.message);
-        return false;
-      }
-      
-      if (data.user && data.user.identities && data.user.identities.length === 0) {
-        setAuthError("This email is already registered. Please log in instead.");
-        return false;
-      }
-      
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([{ 
-            id: data.user.id,
-            name: metadata.name,
-            email: email,
-            role: role,
-            phone: metadata.phone,
-            blood_group: metadata.bloodGroup,
-            age: metadata.age
-          }]);
-        
-        if (profileError) {
-          console.error("Error creating profile:", profileError);
-        }
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Registration error:", error);
-      setAuthError("An unexpected error occurred");
       return false;
     } finally {
       setIsLoading(false);
