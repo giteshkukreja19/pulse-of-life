@@ -54,6 +54,24 @@ const LoginForm = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) {
+        toast.error(error.message);
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      toast.error('Failed to login with Google');
+    }
+  };
+
   return (
     <Card className="w-[350px] md:w-[450px] card-gradient shadow-lg">
       <CardHeader className="space-y-1">
@@ -243,7 +261,11 @@ const LoginForm = () => {
           </div>
         </div>
         <div className="flex flex-col space-y-2">
-          <Button variant="outline" className="w-full gap-2" onClick={() => toast.error("Google login not implemented yet")}>
+          <Button 
+            variant="outline" 
+            className="w-full gap-2" 
+            onClick={handleGoogleLogin}
+          >
             <svg role="img" viewBox="0 0 24 24" className="h-4 w-4">
               <path
                 fill="currentColor"
