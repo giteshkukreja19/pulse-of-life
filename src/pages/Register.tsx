@@ -11,6 +11,10 @@ const Register = () => {
   const { isAuthenticated, authError } = useContext(AuthContext);
   
   useEffect(() => {
+    document.title = "Register | Pulse of Life";
+  }, []);
+  
+  useEffect(() => {
     if (authError) {
       toast.error(authError);
     }

@@ -11,6 +11,10 @@ const Login = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
+    document.title = "Login | Pulse of Life";
+  }, []);
+  
+  useEffect(() => {
     if (authError) {
       toast.error(authError);
     }
