@@ -1,10 +1,11 @@
+
 import { useContext, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import RegisterForm from "@/components/auth/RegisterForm";
 import MainLayout from "@/components/layout/MainLayout";
 import { AuthContext } from "@/App";
 import { toast } from "sonner";
-import { supabase } from "@/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const { isAuthenticated, authError } = useContext(AuthContext);
