@@ -1,5 +1,5 @@
 
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import DonorDashboard from "@/components/dashboard/DonorDashboard";
@@ -13,6 +13,22 @@ import { supabase } from "@/integrations/supabase/client";
 const Dashboard = () => {
   const { isAuthenticated, userRole } = useContext(AuthContext);
   const { toast } = useToast();
+  const [userName, setUserName] = useState("");
+  
+  useEffect(() => {
+    const getUserInfo = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Get name from user metadata or use email as fallback
+        const userDisplayName = user.user_metadata?.name || user.email || "";
+        setUserName(userDisplayName);
+      }
+    };
+    
+    if (isAuthenticated) {
+      getUserInfo();
+    }
+  }, [isAuthenticated]);
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
@@ -30,7 +46,10 @@ const Dashboard = () => {
     <MainLayout>
       <div className="container mx-auto py-8 px-4">
         {userRole === "donor" && (
-          <DonorDashboard onActionSuccess={handleActionSuccess} />
+          <DonorDashboard 
+            onActionSuccess={handleActionSuccess} 
+            userName={userName} 
+          />
         )}
         
         {userRole === "recipient" && (
@@ -42,7 +61,10 @@ const Dashboard = () => {
         )}
         
         {userRole === "hospital" && (
-          <HospitalDashboard onActionSuccess={handleActionSuccess} />
+          <HospitalDashboard 
+            onActionSuccess={handleActionSuccess} 
+            userName={userName} 
+          />
         )}
         
         {!userRole && (

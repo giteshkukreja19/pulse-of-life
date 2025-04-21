@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Droplet, Calendar, Award, Clock, Heart, Bookmark, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,27 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import StatCard from "./StatCard";
-import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 interface DonorDashboardProps {
   onActionSuccess: (action: string) => void;
+  userName: string;
 }
 
-const DonorDashboard = ({ onActionSuccess }: DonorDashboardProps) => {
+const DonorDashboard = ({ onActionSuccess, userName }: DonorDashboardProps) => {
   const [availability, setAvailability] = useState<"available" | "unavailable">("available");
-  const [userEmail, setUserEmail] = useState<string>("");
-
-  useEffect(() => {
-    const getUserEmail = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setUserEmail(user.email);
-      }
-    };
-    
-    getUserEmail();
-  }, []);
 
   const handleScheduleDonation = () => {
     onActionSuccess("New donation appointment scheduled");
@@ -42,7 +29,7 @@ const DonorDashboard = ({ onActionSuccess }: DonorDashboardProps) => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold capitalize">{userEmail}'s Dashboard</h1>
+          <h1 className="text-3xl font-bold">{userName ? userName + "'s Dashboard" : "Your Dashboard"}</h1>
           <p className="text-muted-foreground">
             Welcome! Start your journey as a blood donor and help save lives.
           </p>

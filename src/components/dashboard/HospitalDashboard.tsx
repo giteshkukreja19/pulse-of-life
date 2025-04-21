@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   Activity, Users, Calendar, Heart, Droplet, 
   Search, Filter
@@ -8,30 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 
 interface HospitalDashboardProps {
   onActionSuccess: (action: string) => void;
+  userName: string;
 }
 
-const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
+const HospitalDashboard = ({ onActionSuccess, userName }: HospitalDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [userEmail, setUserEmail] = useState<string>("");
-  
-  useEffect(() => {
-    const getUserEmail = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setUserEmail(user.email);
-      }
-    };
-    
-    getUserEmail();
-  }, []);
   
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold capitalize">{userEmail}'s Dashboard</h1>
+      <h1 className="text-3xl font-bold">{userName ? userName + "'s Dashboard" : "Hospital Dashboard"}</h1>
       <p className="text-muted-foreground">
         Manage blood requests and inventory
       </p>
