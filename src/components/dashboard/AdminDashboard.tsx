@@ -1,14 +1,18 @@
 
 import { useState } from "react";
 import { 
-  Users, Activity, Hospital, Droplet, Calendar, 
-  FileText, Settings, PieChart, UserCheck, Database
+  Activity, Users, Hospital, Droplet, Calendar, 
+  FileText, Settings, PieChart, UserCheck, Database,
+  Search, Filter
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useBloodRequests } from "@/hooks/useBloodRequests";
+import { useHospitals } from "@/hooks/useHospitals";
+import StatCard from "./StatCard";
 import {
   Table,
   TableBody,
@@ -17,49 +21,67 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import StatCard from "./StatCard";
 
 interface AdminDashboardProps {
   onActionSuccess: (action: string) => void;
 }
 
-// Mock data for admin dashboard
-const recentRequests = [
-  { id: "REQ-001", bloodGroup: "O+", units: 2, hospital: "Memorial Hospital", urgency: "High", status: "Pending" },
-  { id: "REQ-002", bloodGroup: "A-", units: 1, hospital: "City Medical Center", urgency: "Medium", status: "Fulfilled" },
-  { id: "REQ-003", bloodGroup: "B+", units: 3, hospital: "University Hospital", urgency: "Critical", status: "Pending" },
-  { id: "REQ-004", bloodGroup: "AB+", units: 1, hospital: "St. Mary's Hospital", urgency: "Low", status: "Fulfilled" },
-];
-
-const registeredHospitals = [
-  { id: "H-001", name: "Memorial Hospital", location: "Downtown", contactPerson: "Dr. Smith", bloodBankStatus: "Active" },
-  { id: "H-002", name: "City Medical Center", location: "Westside", contactPerson: "Dr. Johnson", bloodBankStatus: "Active" },
-  { id: "H-003", name: "University Hospital", location: "Campus Area", contactPerson: "Dr. Williams", bloodBankStatus: "Inactive" },
-];
-
-const bloodInventory = [
-  { bloodGroup: "A+", available: 15, reserved: 3 },
-  { bloodGroup: "A-", available: 8, reserved: 1 },
-  { bloodGroup: "B+", available: 12, reserved: 2 },
-  { bloodGroup: "B-", available: 5, reserved: 0 },
-  { bloodGroup: "AB+", available: 4, reserved: 1 },
-  { bloodGroup: "AB-", available: 2, reserved: 0 },
-  { bloodGroup: "O+", available: 20, reserved: 5 },
-  { bloodGroup: "O-", available: 10, reserved: 2 },
-];
-
 const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
+  const { data: bloodRequests = [], isLoading: isLoadingRequests } = useBloodRequests();
+  const { data: hospitals = [], isLoading: isLoadingHospitals } = useHospitals();
   
-  const handleApprove = (id: string) => {
-    // In a real app, this would make an API call to approve the request
-    onActionSuccess(`Request ${id} approved`);
+  const handleApprove = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('blood_requests')
+        .update({ status: 'approved' })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      onActionSuccess(`Request ${id} approved`);
+      toast({
+        title: "Success",
+        description: "Blood request approved successfully",
+      });
+    } catch (error) {
+      console.error('Error approving request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve request",
+        variant: "destructive",
+      });
+    }
   };
   
-  const handleReject = (id: string) => {
-    // In a real app, this would make an API call to reject the request
-    onActionSuccess(`Request ${id} rejected`);
+  const handleReject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('blood_requests')
+        .update({ status: 'rejected' })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      onActionSuccess(`Request ${id} rejected`);
+      toast({
+        title: "Success",
+        description: "Blood request rejected successfully",
+      });
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject request",
+        variant: "destructive",
+      });
+    }
   };
+
+  const pendingRequests = bloodRequests.filter(req => req.status === 'pending');
+  const activeHospitals = hospitals.filter(h => h.status === 'active');
   
   return (
     <div className="space-y-6">
@@ -82,44 +104,38 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
         </div>
       </div>
       
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Donors"
-          value="237"
-          icon={<Users className="h-5 w-5 text-blood" />}
-          description="Registered blood donors"
-          trend="up"
-          trendValue="+12 this week"
-        />
-        
-        <StatCard
-          title="Active Requests"
-          value="18"
+          title="Pending Requests"
+          value={pendingRequests.length.toString()}
           icon={<Activity className="h-5 w-5 text-blood" />}
-          description="Pending blood requests"
-          trend="up"
-          trendValue="+3 since yesterday"
+          description="Active blood requests"
+          trend={pendingRequests.length > 0 ? "up" : undefined}
+          trendValue={pendingRequests.length > 0 ? "Needs attention" : undefined}
         />
         
         <StatCard
-          title="Blood Banks"
-          value="12"
+          title="Active Hospitals"
+          value={activeHospitals.length.toString()}
           icon={<Hospital className="h-5 w-5 text-blood" />}
-          description="Operational blood banks"
+          description="Registered hospitals"
         />
         
         <StatCard
-          title="Total Donations"
-          value="583"
+          title="Total Requests"
+          value={bloodRequests.length.toString()}
           icon={<Droplet className="h-5 w-5 text-blood" />}
-          description="Lifetime donations"
-          trend="up"
-          trendValue="+24 this month"
+          description="All-time blood requests"
+        />
+        
+        <StatCard
+          title="Success Rate"
+          value={`${Math.round((bloodRequests.filter(r => r.status === 'approved').length / (bloodRequests.length || 1)) * 100)}%`}
+          icon={<CheckCircle className="h-5 w-5 text-blood" />}
+          description="Approved requests"
         />
       </div>
       
-      {/* Main Dashboard Content */}
       <Tabs defaultValue="requests">
         <TabsList className="mb-4">
           <TabsTrigger value="requests" className="flex items-center gap-2">
@@ -129,18 +145,6 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
           <TabsTrigger value="hospitals" className="flex items-center gap-2">
             <Hospital className="h-4 w-4" />
             <span>Hospitals</span>
-          </TabsTrigger>
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            <span>Blood Inventory</span>
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2">
-            <PieChart className="h-4 w-4" />
-            <span>Reports</span>
-          </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <UserCheck className="h-4 w-4" />
-            <span>Users</span>
           </TabsTrigger>
         </TabsList>
         
@@ -160,84 +164,90 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Request ID</TableHead>
-                    <TableHead>Blood Group</TableHead>
-                    <TableHead>Units</TableHead>
-                    <TableHead>Hospital</TableHead>
-                    <TableHead>Urgency</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">{request.id}</TableCell>
-                      <TableCell>
-                        <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                          {request.bloodGroup}
-                        </span>
-                      </TableCell>
-                      <TableCell>{request.units}</TableCell>
-                      <TableCell>{request.hospital}</TableCell>
-                      <TableCell>
-                        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                          request.urgency === "Critical" 
-                            ? "bg-red-100 text-red-800" 
-                            : request.urgency === "High" 
-                            ? "bg-orange-100 text-orange-800" 
-                            : request.urgency === "Medium" 
-                            ? "bg-yellow-100 text-yellow-800" 
-                            : "bg-green-100 text-green-800"
-                        }`}>
-                          {request.urgency}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                          request.status === "Pending" 
-                            ? "bg-blue-100 text-blue-800" 
-                            : "bg-green-100 text-green-800"
-                        }`}>
-                          {request.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          {request.status === "Pending" && (
-                            <>
-                              <Button 
-                                onClick={() => handleApprove(request.id)} 
-                                variant="outline" 
-                                size="sm" 
-                                className="text-green-600 border-green-600 hover:bg-green-50"
-                              >
-                                Approve
-                              </Button>
-                              <Button 
-                                onClick={() => handleReject(request.id)} 
-                                variant="outline" 
-                                size="sm" 
-                                className="text-red-600 border-red-600 hover:bg-red-50"
-                              >
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                          {request.status === "Fulfilled" && (
-                            <Button variant="outline" size="sm">
-                              Details
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+              {isLoadingRequests ? (
+                <div className="text-center py-4">Loading requests...</div>
+              ) : bloodRequests.length === 0 ? (
+                <div className="text-center py-4">No blood requests found</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Patient Name</TableHead>
+                      <TableHead>Blood Group</TableHead>
+                      <TableHead>Units</TableHead>
+                      <TableHead>Hospital</TableHead>
+                      <TableHead>Urgency</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {bloodRequests
+                      .filter(request => 
+                        request.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        request.hospital.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">{request.patient_name}</TableCell>
+                          <TableCell>
+                            <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                              {request.blood_group}
+                            </span>
+                          </TableCell>
+                          <TableCell>{request.units}</TableCell>
+                          <TableCell>{request.hospital}</TableCell>
+                          <TableCell>
+                            <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                              request.urgency === "Critical" 
+                                ? "bg-red-100 text-red-800" 
+                                : request.urgency === "High" 
+                                ? "bg-orange-100 text-orange-800" 
+                                : "bg-green-100 text-green-800"
+                            }`}>
+                              {request.urgency}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                              request.status === "pending" 
+                                ? "bg-blue-100 text-blue-800"
+                                : request.status === "approved"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}>
+                              {request.status}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              {request.status === "pending" && (
+                                <>
+                                  <Button 
+                                    onClick={() => handleApprove(request.id)} 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="text-green-600 border-green-600 hover:bg-green-50"
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button 
+                                    onClick={() => handleReject(request.id)} 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="text-red-600 border-red-600 hover:bg-red-50"
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -249,177 +259,44 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
               <CardDescription>Manage hospitals and their blood banks</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Hospital Name</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Contact Person</TableHead>
-                    <TableHead>Blood Bank Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {registeredHospitals.map((hospital) => (
-                    <TableRow key={hospital.id}>
-                      <TableCell className="font-medium">{hospital.id}</TableCell>
-                      <TableCell>{hospital.name}</TableCell>
-                      <TableCell>{hospital.location}</TableCell>
-                      <TableCell>{hospital.contactPerson}</TableCell>
-                      <TableCell>
-                        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                          hospital.bloodBankStatus === "Active" 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-gray-100 text-gray-800"
-                        }`}>
-                          {hospital.bloodBankStatus}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">Edit</Button>
-                          <Button variant="outline" size="sm">View</Button>
-                        </div>
-                      </TableCell>
+              {isLoadingHospitals ? (
+                <div className="text-center py-4">Loading hospitals...</div>
+              ) : hospitals.length === 0 ? (
+                <div className="text-center py-4">No hospitals registered yet</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Hospital Name</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Contact Person</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="mt-4">
-                <Button className="btn-blood">Add New Hospital</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="inventory" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Blood Inventory</CardTitle>
-              <CardDescription>Current blood stock levels across all blood banks</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {bloodInventory.map((item) => (
-                  <Card key={item.bloodGroup} className="bg-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-3xl font-bold text-blood">{item.bloodGroup}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Available: {item.available} units
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Reserved: {item.reserved} units
-                          </p>
-                        </div>
-                        <div className="h-12 w-12 bg-red-50 rounded-full flex items-center justify-center">
-                          <Droplet className="h-6 w-6 text-blood" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Export Inventory
-                </Button>
-                <Button variant="outline">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Schedule Donation Drive
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="reports" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reports & Analytics</CardTitle>
-              <CardDescription>View statistics and generate reports</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Donation Trends</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64 flex items-center justify-center bg-gray-50 rounded-md">
-                      <p className="text-muted-foreground">Donation trend chart would go here</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Blood Group Distribution</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-64 flex items-center justify-center bg-gray-50 rounded-md">
-                      <p className="text-muted-foreground">Blood group pie chart would go here</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="mt-6 flex justify-between">
-                <div>
-                  <Label htmlFor="report-type">Report Type</Label>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <select id="report-type" className="p-2 border rounded-md">
-                      <option value="monthly">Monthly Summary</option>
-                      <option value="quarterly">Quarterly Report</option>
-                      <option value="annual">Annual Statistics</option>
-                      <option value="custom">Custom Range</option>
-                    </select>
-                    <Button>Generate Report</Button>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Export as PDF
-                  </Button>
-                  <Button variant="outline">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Export as CSV
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="users" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>View, edit and manage all registered users</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <Input placeholder="Search users..." className="w-80" />
-                  <Button variant="outline">
-                    Search
-                  </Button>
-                </div>
-                <div>
-                  <Button className="btn-blood">
-                    Add New User
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 rounded-md p-6 flex items-center justify-center h-64">
-                <p className="text-muted-foreground">User management interface would go here</p>
-              </div>
+                  </TableHeader>
+                  <TableBody>
+                    {hospitals.map((hospital) => (
+                      <TableRow key={hospital.id}>
+                        <TableCell className="font-medium">{hospital.name}</TableCell>
+                        <TableCell>{hospital.location}</TableCell>
+                        <TableCell>{hospital.contact_person}</TableCell>
+                        <TableCell>{hospital.phone}</TableCell>
+                        <TableCell>{hospital.email}</TableCell>
+                        <TableCell>
+                          <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                            hospital.status === "active" 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-gray-100 text-gray-800"
+                          }`}>
+                            {hospital.status}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

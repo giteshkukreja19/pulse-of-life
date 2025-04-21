@@ -9,13 +9,105 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      blood_requests: {
+        Row: {
+          blood_group: string
+          contact_name: string
+          contact_phone: string
+          created_at: string | null
+          hospital: string
+          id: string
+          location: string
+          notes: string | null
+          patient_name: string
+          status: string | null
+          units: number
+          updated_at: string | null
+          urgency: string
+          user_id: string
+        }
+        Insert: {
+          blood_group: string
+          contact_name: string
+          contact_phone: string
+          created_at?: string | null
+          hospital: string
+          id?: string
+          location: string
+          notes?: string | null
+          patient_name: string
+          status?: string | null
+          units: number
+          updated_at?: string | null
+          urgency: string
+          user_id: string
+        }
+        Update: {
+          blood_group?: string
+          contact_name?: string
+          contact_phone?: string
+          created_at?: string | null
+          hospital?: string
+          id?: string
+          location?: string
+          notes?: string | null
+          patient_name?: string
+          status?: string | null
+          units?: number
+          updated_at?: string | null
+          urgency?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hospitals: {
+        Row: {
+          contact_person: string
+          created_at: string | null
+          email: string
+          id: string
+          location: string
+          name: string
+          phone: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_person: string
+          created_at?: string | null
+          email: string
+          id?: string
+          location: string
+          name: string
+          phone: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_person?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          location?: string
+          name?: string
+          phone?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
