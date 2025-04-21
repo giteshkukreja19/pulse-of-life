@@ -1,122 +1,39 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Activity, Users, Calendar, Heart, Droplet, 
-  Search, Filter, AlertTriangle, CheckCircle, Clock
+  Search, Filter
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HospitalDashboardProps {
   onActionSuccess: (action: string) => void;
 }
 
-// Mock data
-const pendingRequests = [
-  { 
-    id: "REQ-005", 
-    patientName: "John Smith", 
-    bloodGroup: "O+", 
-    units: 2, 
-    urgency: "High", 
-    status: "Pending", 
-    requestDate: "2025-04-12" 
-  },
-  { 
-    id: "REQ-006", 
-    patientName: "Sarah Johnson", 
-    bloodGroup: "A-", 
-    units: 1, 
-    urgency: "Critical", 
-    status: "Pending", 
-    requestDate: "2025-04-14" 
-  },
-  { 
-    id: "REQ-007", 
-    patientName: "Michael Brown", 
-    bloodGroup: "B+", 
-    units: 3, 
-    urgency: "Medium", 
-    status: "Pending", 
-    requestDate: "2025-04-10" 
-  },
-];
-
-const availableDonors = [
-  { 
-    id: "D-001", 
-    name: "David Wilson", 
-    bloodGroup: "O+", 
-    lastDonation: "2025-02-15", 
-    distance: "2.3 miles", 
-    status: "Available" 
-  },
-  { 
-    id: "D-002", 
-    name: "Emily Garcia", 
-    bloodGroup: "A-", 
-    lastDonation: "2025-01-22", 
-    distance: "4.1 miles", 
-    status: "Available" 
-  },
-  { 
-    id: "D-003", 
-    name: "James Rodriguez", 
-    bloodGroup: "B+", 
-    lastDonation: "2025-03-01", 
-    distance: "1.7 miles", 
-    status: "Available" 
-  },
-  { 
-    id: "D-004", 
-    name: "Sophia Lee", 
-    bloodGroup: "O-", 
-    lastDonation: "2025-02-28", 
-    distance: "3.5 miles", 
-    status: "Available" 
-  },
-];
-
-const inventoryLevels = [
-  { bloodGroup: "A+", available: 8, reserved: 2 },
-  { bloodGroup: "A-", available: 3, reserved: 1 },
-  { bloodGroup: "B+", available: 6, reserved: 1 },
-  { bloodGroup: "B-", available: 2, reserved: 0 },
-  { bloodGroup: "AB+", available: 1, reserved: 0 },
-  { bloodGroup: "AB-", available: 1, reserved: 0 },
-  { bloodGroup: "O+", available: 10, reserved: 3 },
-  { bloodGroup: "O-", available: 5, reserved: 1 },
-];
-
 const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [userEmail, setUserEmail] = useState<string>("");
   
-  const handleContactDonor = (donorId: string) => {
-    // In a real app, this would initiate contact with the donor
-    onActionSuccess(`Contact initiated with donor ${donorId}`);
-  };
-  
-  const handleFulfillRequest = (requestId: string) => {
-    // In a real app, this would mark the request as fulfilled
-    onActionSuccess(`Request ${requestId} marked as fulfilled`);
-  };
+  useEffect(() => {
+    const getUserEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    };
+    
+    getUserEmail();
+  }, []);
   
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Hospital Dashboard</h1>
+      <h1 className="text-3xl font-bold capitalize">{userEmail}'s Dashboard</h1>
       <p className="text-muted-foreground">
-        Manage blood requests, donors, and inventory for Memorial Hospital
+        Manage blood requests and inventory
       </p>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -126,10 +43,10 @@ const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">8</div>
+              <div className="text-2xl font-bold">0</div>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">2 critical, 3 high, 3 medium</p>
+            <p className="text-xs text-muted-foreground mt-1">No active requests</p>
           </CardContent>
         </Card>
         
@@ -139,10 +56,10 @@ const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">42</div>
+              <div className="text-2xl font-bold">0</div>
               <Users className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Within 5 miles radius</p>
+            <p className="text-xs text-muted-foreground mt-1">Start connecting with donors</p>
           </CardContent>
         </Card>
         
@@ -152,10 +69,10 @@ const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">0</div>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Scheduled for this week</p>
+            <p className="text-xs text-muted-foreground mt-1">No scheduled donations</p>
           </CardContent>
         </Card>
       </div>
@@ -180,8 +97,8 @@ const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
-                <CardTitle>Pending Blood Requests</CardTitle>
-                <CardDescription>Manage blood donation requests for your hospital</CardDescription>
+                <CardTitle>Blood Requests</CardTitle>
+                <CardDescription>Manage blood donation requests</CardDescription>
               </div>
               <Button className="btn-blood">Create New Request</Button>
             </CardHeader>
@@ -204,72 +121,12 @@ const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
                 </Button>
               </div>
               
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Request ID</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Blood Type</TableHead>
-                    <TableHead>Units</TableHead>
-                    <TableHead>Urgency</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">{request.id}</TableCell>
-                      <TableCell>{request.patientName}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-red-50 text-red-800 hover:bg-red-100">
-                          {request.bloodGroup}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{request.units} units</TableCell>
-                      <TableCell>
-                        {request.urgency === "Critical" ? (
-                          <Badge className="bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            Critical
-                          </Badge>
-                        ) : request.urgency === "High" ? (
-                          <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200">
-                            High
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                            Medium
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>{request.requestDate}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Pending
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button 
-                            onClick={() => handleFulfillRequest(request.id)} 
-                            size="sm" 
-                            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1"
-                          >
-                            <CheckCircle className="h-3 w-3" />
-                            Fulfill
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Details
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No blood requests found.</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Create a new request to get started.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -278,7 +135,7 @@ const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
           <Card>
             <CardHeader>
               <CardTitle>Available Donors</CardTitle>
-              <CardDescription>Donors in your region who are available for donation</CardDescription>
+              <CardDescription>Connect with donors in your region</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex justify-between items-center mb-4">
@@ -309,49 +166,14 @@ const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
                 </div>
               </div>
               
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Donor ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Blood Type</TableHead>
-                    <TableHead>Last Donation</TableHead>
-                    <TableHead>Distance</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {availableDonors.map((donor) => (
-                    <TableRow key={donor.id}>
-                      <TableCell className="font-medium">{donor.id}</TableCell>
-                      <TableCell>{donor.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-red-50 text-red-800 hover:bg-red-100">
-                          {donor.bloodGroup}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{donor.lastDonation}</TableCell>
-                      <TableCell>{donor.distance}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                          Available
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          onClick={() => handleContactDonor(donor.id)} 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                        >
-                          Contact
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  No donors found in your area.
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Try expanding your search radius or removing filters.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -360,59 +182,17 @@ const HospitalDashboard = ({ onActionSuccess }: HospitalDashboardProps) => {
           <Card>
             <CardHeader>
               <CardTitle>Blood Inventory</CardTitle>
-              <CardDescription>Current blood stock levels at your hospital</CardDescription>
+              <CardDescription>Current blood stock levels</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                {inventoryLevels.map((item) => (
-                  <Card key={item.bloodGroup} className={`${
-                    item.available < 3 ? "bg-red-50" : "bg-white"
-                  }`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-2xl font-bold text-blood">{item.bloodGroup}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Available: {item.available} units
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Reserved: {item.reserved} units
-                          </p>
-                        </div>
-                        <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
-                          <Droplet className="h-5 w-5 text-blood" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              
-              <div className="mt-6">
-                <h3 className="text-lg font-medium mb-2">Inventory Actions</h3>
-                <div className="flex flex-wrap gap-2">
-                  <Button className="btn-blood">Request Blood Transfer</Button>
-                  <Button variant="outline">Update Inventory</Button>
-                  <Button variant="outline">Generate Report</Button>
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <h3 className="text-lg font-medium mb-2">Low Stock Alert</h3>
-                <Card className="bg-red-50 border-red-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-red-800">Critical Low Stock Alert</p>
-                        <p className="text-sm text-red-700">
-                          AB+ and B- blood types are critically low. Consider requesting a transfer or organizing 
-                          a donation drive for these blood types.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  No inventory data available.
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Start by adding your current blood stock levels.
+                </p>
+                <Button className="btn-blood mt-4">Add Inventory</Button>
               </div>
             </CardContent>
           </Card>

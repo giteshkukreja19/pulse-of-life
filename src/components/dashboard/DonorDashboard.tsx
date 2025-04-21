@@ -1,14 +1,13 @@
-
-import { useState } from "react";
-import { Droplet, Calendar, Award, Clock, Heart, Bookmark, CheckCircle, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Droplet, Calendar, Award, Clock, Heart, Bookmark, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import StatCard from "./StatCard";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DonorDashboardProps {
   onActionSuccess: (action: string) => void;
@@ -16,7 +15,19 @@ interface DonorDashboardProps {
 
 const DonorDashboard = ({ onActionSuccess }: DonorDashboardProps) => {
   const [availability, setAvailability] = useState<"available" | "unavailable">("available");
-  
+  const [userEmail, setUserEmail] = useState<string>("");
+
+  useEffect(() => {
+    const getUserEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+      }
+    };
+    
+    getUserEmail();
+  }, []);
+
   const handleScheduleDonation = () => {
     onActionSuccess("New donation appointment scheduled");
   };
@@ -31,7 +42,7 @@ const DonorDashboard = ({ onActionSuccess }: DonorDashboardProps) => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Donor Dashboard</h1>
+          <h1 className="text-3xl font-bold capitalize">{userEmail}'s Dashboard</h1>
           <p className="text-muted-foreground">
             Welcome! Start your journey as a blood donor and help save lives.
           </p>
@@ -202,15 +213,6 @@ const DonorDashboard = ({ onActionSuccess }: DonorDashboardProps) => {
                   Check back later or expand your search radius.
                 </p>
               </div>
-              
-              <div className="mt-6 text-center">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Want to see all available requests?
-                </p>
-                <Link to="/donors">
-                  <Button variant="outline">Browse All Requests</Button>
-                </Link>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -281,4 +283,3 @@ const DonorDashboard = ({ onActionSuccess }: DonorDashboardProps) => {
 };
 
 export default DonorDashboard;
-

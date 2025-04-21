@@ -8,6 +8,7 @@ import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import HospitalDashboard from "@/components/dashboard/HospitalDashboard";
 import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/App";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const { isAuthenticated, userRole } = useContext(AuthContext);
@@ -24,7 +25,7 @@ const Dashboard = () => {
       variant: "default",
     });
   };
-  
+
   return (
     <MainLayout>
       <div className="container mx-auto py-8 px-4">
