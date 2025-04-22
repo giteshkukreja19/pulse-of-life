@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,48 +26,154 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { User, MapPin, Phone, Mail, Calendar, AlertCircle, Heart, Clock } from "lucide-react";
+import {
+  User,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+  AlertCircle,
+  Heart,
+  Clock,
+  Gps,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { AuthContext } from "@/App";
+import { toast } from "sonner";
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 const Profile = () => {
-  const [profileData, setProfileData] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (234) 567-8901",
-    bloodGroup: "A+",
-    age: "28",
-    address: "123 Main St, New York, NY 10001",
-    lastDonated: "2025-01-15",
-    medicalNotes: "",
-    isAvailable: true,
-    emergencyContact: "Jane Doe - +1 (234) 567-8902",
-  });
+  const { isAuthenticated } = useContext(AuthContext);
+  const [profileData, setProfileData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setProfileData((prev) => ({ ...prev, [name]: value }));
-  };
+  // Fetch current user's donor profile
+  useEffect(() => {
+    let subscription: any;
+    let channel: any;
+    const fetchProfile = async () => {
+      setLoading(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        setProfileData(null);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("donors")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) {
+        setProfileData(null);
+        setLoading(false);
+        return;
+      }
+      setProfileData(data);
+      setLoading(false);
 
-  const handleSelectChange = (name: string) => (value: string) => {
-    setProfileData((prev) => ({ ...prev, [name]: value }));
-  };
+      // Subscribe to real-time updates for this donor
+      channel = supabase
+        .channel("public:donors_profile")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "donors", filter: `user_id=eq.${user.id}` },
+          (payload) => {
+            // Fetch updated user data
+            supabase
+              .from("donors")
+              .select("*")
+              .eq("user_id", user.id)
+              .maybeSingle()
+              .then(({ data }) => setProfileData(data));
+          }
+        )
+        .subscribe();
+    };
+    fetchProfile();
 
-  const handleSwitchChange = (checked: boolean) => {
-    setProfileData((prev) => ({ ...prev, isAvailable: checked }));
-  };
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [isAuthenticated]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Save profile (updates database)
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, submit profile changes to the backend
-    console.log("Profile updated", profileData);
+    setSaving(true);
+    const { id, ...upsertData } = profileData;
+    const { error } = await supabase
+      .from("donors")
+      .update(upsertData)
+      .eq("id", profileData.id);
+    setSaving(false);
+    if (!error) {
+      toast.success("Profile updated!");
+    } else {
+      toast.error("Failed to update profile.");
+    }
   };
+
+  // GPS Location button: fill "location" field using browser geolocation
+  const handleGPSClick = async () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation not supported.");
+      return;
+    }
+    toast.info("Fetching current location...");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        // Use a public reverse geocoding API for demonstration
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+        );
+        const data = await res.json();
+        const address = data.display_name || `${latitude}, ${longitude}`;
+        setProfileData((prev: any) => ({
+          ...prev,
+          location: address,
+        }));
+        toast.success("Location detected and added!");
+      },
+      (err) => {
+        toast.error("Geolocation failed.");
+      }
+    );
+  };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-8 px-4">
+          <h1 className="text-3xl font-bold mb-8">My Profile</h1>
+          <div className="text-center py-10">Loading profile...</div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-8 px-4">
+          <h1 className="text-3xl font-bold mb-8">My Profile</h1>
+          <div className="text-center py-10 text-destructive">
+            Your profile is not available. Please register as a donor to view your profile.
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-8">My Profile</h1>
-
         <Tabs defaultValue="personal" className="w-full">
           <TabsList className="grid grid-cols-3 mb-8">
             <TabsTrigger value="personal" className="flex items-center gap-2">
@@ -101,8 +206,13 @@ const Profile = () => {
                       <Input
                         id="name"
                         name="name"
-                        value={profileData.name}
-                        onChange={handleInputChange}
+                        value={profileData.name || ""}
+                        onChange={(e) =>
+                          setProfileData((prev: any) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
                         required
                       />
                     </div>
@@ -112,9 +222,8 @@ const Profile = () => {
                         id="email"
                         name="email"
                         type="email"
-                        value={profileData.email}
-                        onChange={handleInputChange}
-                        required
+                        value={profileData.email || ""}
+                        readOnly // email shouldn't be editable
                       />
                     </div>
                   </div>
@@ -125,16 +234,26 @@ const Profile = () => {
                       <Input
                         id="phone"
                         name="phone"
-                        value={profileData.phone}
-                        onChange={handleInputChange}
+                        value={profileData.phone || ""}
+                        onChange={(e) =>
+                          setProfileData((prev: any) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
                         required
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="bloodGroup">Blood Group</Label>
                       <Select
-                        onValueChange={handleSelectChange("bloodGroup")}
-                        value={profileData.bloodGroup}
+                        onValueChange={(value) =>
+                          setProfileData((prev: any) => ({
+                            ...prev,
+                            blood_group: value,
+                          }))
+                        }
+                        value={profileData.blood_group}
                       >
                         <SelectTrigger id="bloodGroup">
                           <SelectValue placeholder="Select Blood Group" />
@@ -152,61 +271,63 @@ const Profile = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="age">Age</Label>
-                      <Input
-                        id="age"
-                        name="age"
-                        type="number"
-                        min="18"
-                        max="65"
-                        value={profileData.age}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
                       <Label htmlFor="lastDonated">Last Donation Date</Label>
                       <Input
                         id="lastDonated"
-                        name="lastDonated"
+                        name="last_donation"
                         type="date"
-                        value={profileData.lastDonated}
-                        onChange={handleInputChange}
+                        value={
+                          profileData.last_donation
+                            ? profileData.last_donation.slice(0, 10)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setProfileData((prev: any) => ({
+                            ...prev,
+                            last_donation: e.target.value,
+                          }))
+                        }
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="location"
+                          name="location"
+                          value={profileData.location || ""}
+                          onChange={(e) =>
+                            setProfileData((prev: any) => ({
+                              ...prev,
+                              location: e.target.value,
+                            }))
+                          }
+                        />
+                        <Button
+                          type="button"
+                          className="px-3"
+                          variant="secondary"
+                          title="Detect location"
+                          onClick={handleGPSClick}
+                        >
+                          <Gps className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea
-                      id="address"
-                      name="address"
-                      value={profileData.address}
-                      onChange={handleInputChange}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="emergencyContact">Emergency Contact</Label>
+                    <Label htmlFor="zip">Zip Code</Label>
                     <Input
-                      id="emergencyContact"
-                      name="emergencyContact"
-                      value={profileData.emergencyContact}
-                      onChange={handleInputChange}
-                      placeholder="Name - Phone Number"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="medicalNotes">Medical Notes (Private)</Label>
-                    <Textarea
-                      id="medicalNotes"
-                      name="medicalNotes"
-                      value={profileData.medicalNotes}
-                      onChange={handleInputChange}
-                      placeholder="Any medical conditions or notes you'd like to keep on record"
-                      rows={3}
+                      id="zip"
+                      name="zip"
+                      value={profileData.zip || ""}
+                      onChange={(e) =>
+                        setProfileData((prev: any) => ({
+                          ...prev,
+                          zip: e.target.value,
+                        }))
+                      }
                     />
                   </div>
                 </form>
@@ -215,9 +336,10 @@ const Profile = () => {
                 <Button variant="outline">Cancel</Button>
                 <Button
                   className="btn-blood"
-                  onClick={(e) => handleSubmit(e as React.FormEvent)}
+                  onClick={handleSubmit}
+                  disabled={saving}
                 >
-                  Save Changes
+                  {saving ? "Saving..." : "Save Changes"}
                 </Button>
               </CardFooter>
             </Card>
@@ -347,7 +469,12 @@ const Profile = () => {
                     </div>
                     <Switch
                       checked={profileData.isAvailable}
-                      onCheckedChange={handleSwitchChange}
+                      onChange={(e) =>
+                        setProfileData((prev: any) => ({
+                          ...prev,
+                          isAvailable: e.target.checked,
+                        }))
+                      }
                     />
                   </div>
 

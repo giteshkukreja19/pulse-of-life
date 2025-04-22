@@ -1,4 +1,3 @@
-
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "@/App";
@@ -43,6 +42,7 @@ const RegisterForm = () => {
     city: "",
     state: "",
     licenseNumber: "",
+    zip: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,7 +57,6 @@ const RegisterForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Form validation
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       toast.error("Please fill in all required fields");
       return;
@@ -68,7 +67,6 @@ const RegisterForm = () => {
       return;
     }
     
-    // Add role-specific validation
     if (activeTab === "hospital" && !formData.licenseNumber) {
       toast.error("License number is required for hospital registration");
       return;
@@ -80,13 +78,12 @@ const RegisterForm = () => {
     }
     
     try {
-      // Common metadata for all user types
       const metadata: any = {
         name: formData.name,
         phone: formData.phone,
+        zip: formData.zip,
       };
       
-      // Add role-specific metadata
       if (activeTab === "donor" || activeTab === "recipient") {
         metadata.bloodGroup = formData.bloodGroup;
         metadata.age = formData.age;
@@ -97,7 +94,6 @@ const RegisterForm = () => {
         metadata.licenseNumber = formData.licenseNumber;
       }
       
-      // Register user using our context's register function
       const success = await register(
         formData.email,
         formData.password,
@@ -242,6 +238,18 @@ const RegisterForm = () => {
                 </div>
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="zip">Zip Code</Label>
+                <Input
+                  id="zip"
+                  name="zip"
+                  placeholder="12345"
+                  required
+                  value={formData.zip}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
               <Button 
                 type="submit" 
                 className="w-full btn-blood flex gap-2"
@@ -355,6 +363,18 @@ const RegisterForm = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="zip">Zip Code</Label>
+                <Input
+                  id="zip"
+                  name="zip"
+                  placeholder="12345"
+                  required
+                  value={formData.zip}
+                  onChange={handleInputChange}
+                />
               </div>
               
               <Button 
@@ -483,6 +503,18 @@ const RegisterForm = () => {
                   placeholder="+1 (234) 567-8901"
                   required
                   value={formData.phone}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="zip">Zip Code</Label>
+                <Input
+                  id="zip"
+                  name="zip"
+                  placeholder="12345"
+                  required
+                  value={formData.zip}
                   onChange={handleInputChange}
                 />
               </div>
