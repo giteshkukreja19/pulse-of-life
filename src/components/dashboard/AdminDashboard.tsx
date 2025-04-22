@@ -3,7 +3,7 @@ import { useState } from "react";
 import { 
   Activity, Users, Hospital, Droplet, Calendar, 
   FileText, Settings, PieChart, UserCheck, Database,
-  Search, Filter
+  Search, Filter, CheckCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdminDashboardProps {
   onActionSuccess: (action: string) => void;
@@ -31,16 +32,18 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
   const { toast } = useToast();
   const { data: bloodRequests = [], isLoading: isLoadingRequests } = useBloodRequests();
   const { data: hospitals = [], isLoading: isLoadingHospitals } = useHospitals();
-  
+
+  // All actions below use only Supabase data, not mock data!
+
   const handleApprove = async (id: string) => {
     try {
       const { error } = await supabase
         .from('blood_requests')
         .update({ status: 'approved' })
         .eq('id', id);
-      
+
       if (error) throw error;
-      
+
       onActionSuccess(`Request ${id} approved`);
       toast({
         title: "Success",
@@ -55,16 +58,16 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
       });
     }
   };
-  
+
   const handleReject = async (id: string) => {
     try {
       const { error } = await supabase
         .from('blood_requests')
         .update({ status: 'rejected' })
         .eq('id', id);
-      
+
       if (error) throw error;
-      
+
       onActionSuccess(`Request ${id} rejected`);
       toast({
         title: "Success",
@@ -82,7 +85,11 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
 
   const pendingRequests = bloodRequests.filter(req => req.status === 'pending');
   const activeHospitals = hospitals.filter(h => h.status === 'active');
-  
+
+  // NOTE: You can view and manage all live data directly in your Supabase dashboard:
+  // https://supabase.com/dashboard/project/hqstezhjggxjuskktlaw/tables (Tables: 'blood_requests', 'hospitals')
+  // The admin dashboard below loads **live** database data and allows no mock data.
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -103,7 +110,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
           </Button>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Pending Requests"
@@ -113,21 +120,21 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
           trend={pendingRequests.length > 0 ? "up" : undefined}
           trendValue={pendingRequests.length > 0 ? "Needs attention" : undefined}
         />
-        
+
         <StatCard
           title="Active Hospitals"
           value={activeHospitals.length.toString()}
           icon={<Hospital className="h-5 w-5 text-blood" />}
           description="Registered hospitals"
         />
-        
+
         <StatCard
           title="Total Requests"
           value={bloodRequests.length.toString()}
           icon={<Droplet className="h-5 w-5 text-blood" />}
           description="All-time blood requests"
         />
-        
+
         <StatCard
           title="Success Rate"
           value={`${Math.round((bloodRequests.filter(r => r.status === 'approved').length / (bloodRequests.length || 1)) * 100)}%`}
@@ -135,7 +142,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
           description="Approved requests"
         />
       </div>
-      
+
       <Tabs defaultValue="requests">
         <TabsList className="mb-4">
           <TabsTrigger value="requests" className="flex items-center gap-2">
@@ -147,7 +154,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
             <span>Hospitals</span>
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="requests" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -251,7 +258,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="hospitals" className="space-y-4">
           <Card>
             <CardHeader>
@@ -306,3 +313,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
 };
 
 export default AdminDashboard;
+
+// All data is shown live from Supabase. 
+// View and edit in the Supabase dashboard: https://supabase.com/dashboard/project/hqstezhjggxjuskktlaw/tables
+
