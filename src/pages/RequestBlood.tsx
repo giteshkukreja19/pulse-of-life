@@ -1,10 +1,31 @@
 
+import { useContext, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import RequestForm from "@/components/blood/RequestForm";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Info } from "lucide-react";
+import { AuthContext } from "@/App";
+import { useToast } from "@/hooks/use-toast";
 
 const RequestBlood = () => {
+  const { isAuthenticated } = useContext(AuthContext);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    document.title = "Request Blood Donation | Pulse of Life";
+  }, []);
+  
+  // If user is not authenticated, redirect to login page
+  if (!isAuthenticated) {
+    toast({
+      title: "Authentication required",
+      description: "Please log in to request blood donations",
+      variant: "destructive",
+    });
+    return <Navigate to="/login" />;
+  }
+  
   return (
     <MainLayout>
       <div className="container mx-auto py-12 px-4">

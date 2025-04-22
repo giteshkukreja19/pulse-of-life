@@ -20,6 +20,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useContext } from "react";
+import { AuthContext } from "@/App";
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const urgencyLevels = [
@@ -30,6 +34,9 @@ const urgencyLevels = [
 ];
 
 const RequestForm = () => {
+  const { toast } = useToast();
+  const { userId } = useContext(AuthContext);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     patientName: "",
     bloodGroup: "",
@@ -51,10 +58,86 @@ const RequestForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, submit the blood request
-    console.log("Blood request submitted", formData);
+    
+    if (!userId) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to submit a blood request",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate required fields
+    const requiredFields = [
+      'patientName', 'bloodGroup', 'units', 'urgency', 
+      'hospital', 'location', 'contactName', 'contactPhone'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+    
+    if (missingFields.length > 0) {
+      toast({
+        title: "Missing required fields",
+        description: `Please fill in all required fields: ${missingFields.join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      // Submit the blood request to Supabase
+      const { data, error } = await supabase.from("blood_requests").insert({
+        patient_name: formData.patientName,
+        blood_group: formData.bloodGroup,
+        units: parseInt(formData.units),
+        urgency: formData.urgency,
+        hospital: formData.hospital,
+        location: formData.location,
+        contact_name: formData.contactName,
+        contact_phone: formData.contactPhone,
+        notes: formData.notes,
+        user_id: userId,
+        status: 'pending'
+      });
+      
+      if (error) throw error;
+      
+      // Notify users with matching blood groups in the same location
+      // This would be handled by a real-time subscription on the donor side
+      
+      toast({
+        title: "Request submitted",
+        description: "Your blood request has been submitted successfully",
+      });
+      
+      // Reset form after successful submission
+      setFormData({
+        patientName: "",
+        bloodGroup: "",
+        units: "1",
+        urgency: "",
+        hospital: "",
+        location: "",
+        contactName: "",
+        contactPhone: "",
+        notes: "",
+      });
+      
+    } catch (error: any) {
+      console.error("Error submitting blood request:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit blood request",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -160,11 +243,11 @@ const RequestForm = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">Postal Code/ZIP</Label>
                 <Input
                   id="location"
                   name="location"
-                  placeholder="City, State"
+                  placeholder="Enter postal/ZIP code"
                   required
                   value={formData.location}
                   onChange={handleInputChange}
@@ -217,8 +300,9 @@ const RequestForm = () => {
           type="submit" 
           className="w-full btn-blood"
           onClick={(e) => handleSubmit(e as React.FormEvent)}
+          disabled={loading}
         >
-          Submit Blood Request
+          {loading ? "Submitting..." : "Submit Blood Request"}
         </Button>
       </CardFooter>
     </Card>
