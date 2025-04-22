@@ -60,6 +60,45 @@ export type Database = {
         }
         Relationships: []
       }
+      donors: {
+        Row: {
+          blood_group: string
+          created_at: string | null
+          email: string
+          id: string
+          last_donation: string | null
+          location: string
+          name: string
+          phone: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          blood_group: string
+          created_at?: string | null
+          email: string
+          id?: string
+          last_donation?: string | null
+          location: string
+          name: string
+          phone: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          blood_group?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          last_donation?: string | null
+          location?: string
+          name?: string
+          phone?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       hospitals: {
         Row: {
           contact_person: string
