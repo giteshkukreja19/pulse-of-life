@@ -15,6 +15,7 @@ import FindDonors from "./pages/FindDonors";
 import Profile from "./pages/Profile";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import RegisterHospital from "./pages/RegisterHospital";
 import { toast } from "sonner";
 
 export type UserRole = "donor" | "recipient" | "admin" | "hospital" | null;
@@ -277,25 +278,24 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthContext.Provider value={{ 
-          isAuthenticated, 
-          userRole, 
-          authError, 
+        <AuthContext.Provider value={{
+          isAuthenticated,
+          userRole,
+          authError,
           isLoading,
-          login, 
+          login,
           register,
-          logout 
+          logout
         }}>
           <Toaster />
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={
-                <Navigate to="/login" replace />
-              } />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/about" element={<About />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/register-hospital" element={<RegisterHospital />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Activity, Users, Hospital, Droplet, Calendar, 
@@ -32,8 +31,6 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
   const { toast } = useToast();
   const { data: bloodRequests = [], isLoading: isLoadingRequests } = useBloodRequests();
   const { data: hospitals = [], isLoading: isLoadingHospitals } = useHospitals();
-
-  // All actions below use only Supabase data, not mock data!
 
   const handleApprove = async (id: string) => {
     try {
@@ -85,10 +82,6 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
 
   const pendingRequests = bloodRequests.filter(req => req.status === 'pending');
   const activeHospitals = hospitals.filter(h => h.status === 'active');
-
-  // NOTE: You can view and manage all live data directly in your Supabase dashboard:
-  // https://supabase.com/dashboard/project/hqstezhjggxjuskktlaw/tables (Tables: 'blood_requests', 'hospitals')
-  // The admin dashboard below loads **live** database data and allows no mock data.
 
   return (
     <div className="space-y-6">
@@ -292,8 +285,8 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
                         <TableCell>{hospital.email}</TableCell>
                         <TableCell>
                           <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                            hospital.status === "active" 
-                              ? "bg-green-100 text-green-800" 
+                            hospital.status === "active"
+                              ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-800"
                           }`}>
                             {hospital.status}
@@ -306,6 +299,15 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
               )}
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>All Users (Donors and Recipients)</CardTitle>
+              <CardDescription>See all registered users in real-time</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HospitalUsersTable />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
@@ -316,4 +318,3 @@ export default AdminDashboard;
 
 // All data is shown live from Supabase. 
 // View and edit in the Supabase dashboard: https://supabase.com/dashboard/project/hqstezhjggxjuskktlaw/tables
-

@@ -121,7 +121,7 @@ const RegisterForm = () => {
       
       <CardContent>
         <Tabs defaultValue="donor" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 mb-6">
+          <TabsList className="grid grid-cols-2 mb-6">
             <TabsTrigger value="donor" className="flex items-center gap-2">
               <Heart className="h-4 w-4" />
               <span>Donor</span>
@@ -129,10 +129,6 @@ const RegisterForm = () => {
             <TabsTrigger value="recipient" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               <span>Recipient</span>
-            </TabsTrigger>
-            <TabsTrigger value="hospital" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              <span>Hospital</span>
             </TabsTrigger>
           </TabsList>
           
@@ -391,148 +387,6 @@ const RegisterForm = () => {
               </Button>
             </form>
           </TabsContent>
-          
-          <TabsContent value="hospital">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Hospital Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="City General Hospital"
-                  required
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="licenseNumber">Hospital License Number</Label>
-                <Input
-                  id="licenseNumber"
-                  name="licenseNumber"
-                  placeholder="HL-12345678"
-                  required
-                  value={formData.licenseNumber}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  name="address"
-                  placeholder="123 Healthcare Ave"
-                  required
-                  value={formData.address}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    name="city"
-                    placeholder="Chicago"
-                    required
-                    value={formData.city}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    name="state"
-                    placeholder="Illinois"
-                    required
-                    value={formData.state}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="admin@hospital.com"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Contact Phone</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  placeholder="+1 (234) 567-8901"
-                  required
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="zip">Zip Code</Label>
-                <Input
-                  id="zip"
-                  name="zip"
-                  placeholder="12345"
-                  required
-                  value={formData.zip}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full btn-blood flex gap-2"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
-                ) : (
-                  <Building2 className="h-4 w-4" />
-                )}
-                Register as Hospital
-              </Button>
-            </form>
-          </TabsContent>
         </Tabs>
       </CardContent>
       
@@ -541,6 +395,12 @@ const RegisterForm = () => {
           Already have an account?{" "}
           <Link to="/login" className="text-blood hover:underline font-medium">
             Sign in
+          </Link>
+        </div>
+        <div className="text-sm text-center">
+          Register a hospital?{" "}
+          <Link to="/register-hospital" className="text-blood hover:underline font-medium">
+            Register Hospital
           </Link>
         </div>
       </CardFooter>
