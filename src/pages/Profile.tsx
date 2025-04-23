@@ -146,9 +146,10 @@ const Profile = () => {
     );
   };
 
+  // Fixed: Properly typed the event parameter to access the checked property
   const handleLocationToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocationEnabled(e.target.checked);
-    if (locationEnabled) {
+    if (e.target.checked) {
       // Handle location toggle logic
     }
   };
@@ -476,10 +477,10 @@ const Profile = () => {
                     </div>
                     <Switch
                       checked={profileData.isAvailable}
-                      onChange={(e) =>
+                      onCheckedChange={(checked) =>
                         setProfileData((prev: any) => ({
                           ...prev,
-                          isAvailable: e.target.checked,
+                          isAvailable: checked,
                         }))
                       }
                     />
