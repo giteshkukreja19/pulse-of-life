@@ -11,26 +11,35 @@ export const useDonors = () => {
         .from("donors")
         .select("*")
         .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+      
+      if (error) {
+        console.error("Error fetching donors:", error);
+        throw error;
+      }
+      
+      return data || [];
     },
   });
 
   useEffect(() => {
-    // Setup realtime updates
+    // Setup realtime updates with proper channel naming
     const channel = supabase
-      .channel("public:donors")
+      .channel("donors-realtime-changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "donors" },
         (payload) => {
+          console.log("Donors realtime update received:", payload);
           // Force refetch on any change
           query.refetch();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Donors realtime subscription status:", status);
+      });
 
     return () => {
+      console.log("Unsubscribing from donors realtime updates");
       supabase.removeChannel(channel);
     };
   }, [query]);

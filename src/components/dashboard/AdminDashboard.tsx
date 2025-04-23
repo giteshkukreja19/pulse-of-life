@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   Activity, Users, Hospital, Droplet, Calendar, 
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useBloodRequests } from "@/hooks/useBloodRequests";
 import { useHospitals } from "@/hooks/useHospitals";
+import { useDonors } from "@/hooks/useDonors";
 import StatCard from "./StatCard";
 import {
   Table,
@@ -32,6 +34,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
   const { toast } = useToast();
   const { data: bloodRequests = [], isLoading: isLoadingRequests } = useBloodRequests();
   const { data: hospitals = [], isLoading: isLoadingHospitals } = useHospitals();
+  const { data: donors = [], isLoading: isLoadingDonors } = useDonors();
 
   const handleApprove = async (id: string) => {
     try {
@@ -83,6 +86,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
 
   const pendingRequests = bloodRequests.filter(req => req.status === 'pending');
   const activeHospitals = hospitals.filter(h => h.status === 'active');
+  const totalDonors = donors?.length || 0;
 
   return (
     <div className="space-y-6">
@@ -123,10 +127,10 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
         />
 
         <StatCard
-          title="Total Requests"
-          value={bloodRequests.length.toString()}
-          icon={<Droplet className="h-5 w-5 text-blood" />}
-          description="All-time blood requests"
+          title="Total Donors"
+          value={totalDonors.toString()}
+          icon={<Users className="h-5 w-5 text-blood" />}
+          description="Registered donors"
         />
 
         <StatCard
@@ -147,8 +151,13 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
             <Hospital className="h-4 w-4" />
             <span>Hospitals</span>
           </TabsTrigger>
+          <TabsTrigger value="donors" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>Donors</span>
+          </TabsTrigger>
         </TabsList>
 
+        {/* Requests Tab */}
         <TabsContent value="requests" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -253,6 +262,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
           </Card>
         </TabsContent>
 
+        {/* Hospitals Tab */}
         <TabsContent value="hospitals" className="space-y-4">
           <Card>
             <CardHeader>
@@ -310,12 +320,55 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Donors Tab */}
+        <TabsContent value="donors" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Registered Donors</CardTitle>
+              <CardDescription>View all blood donors</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingDonors ? (
+                <div className="text-center py-4">Loading donors...</div>
+              ) : donors.length === 0 ? (
+                <div className="text-center py-4">No donors registered yet</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Blood Group</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Last Donation</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {donors.map((donor) => (
+                      <TableRow key={donor.id}>
+                        <TableCell className="font-medium">{donor.name}</TableCell>
+                        <TableCell>
+                          <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            {donor.blood_group}
+                          </span>
+                        </TableCell>
+                        <TableCell>{donor.location}</TableCell>
+                        <TableCell>{donor.phone}</TableCell>
+                        <TableCell>{donor.email}</TableCell>
+                        <TableCell>{donor.last_donation ? new Date(donor.last_donation).toLocaleString() : "N/A"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
 };
 
 export default AdminDashboard;
-
-// All data is shown live from Supabase. 
-// View and edit in the Supabase dashboard: https://supabase.com/dashboard/project/hqstezhjggxjuskktlaw/tables
