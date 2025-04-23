@@ -1,5 +1,5 @@
 
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext, UserRole } from "@/App";
 import { Button } from "@/components/ui/button";
@@ -20,13 +20,29 @@ import { LogIn, User, Heart, Hospital, ShieldCheck } from "lucide-react";
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useContext(AuthContext);
+  const { login, isLoading, authError } = useContext(AuthContext);
   
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [localError, setLocalError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<UserRole>("donor");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Clear local error when form data changes
+  useEffect(() => {
+    if (localError) {
+      setLocalError(null);
+    }
+  }, [formData]);
+
+  // Display auth context errors
+  useEffect(() => {
+    if (authError) {
+      setLocalError(authError);
+    }
+  }, [authError]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -35,14 +51,17 @@ const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent, role: UserRole) => {
     e.preventDefault();
+    setLocalError(null);
     
     // Validate form
     if (!formData.email || !formData.password) {
-      toast.error("Please fill in all fields");
+      setLocalError("Please fill in all fields");
       return;
     }
     
     try {
+      setIsSubmitting(true);
+      
       // Attempt login using our context's login function
       const success = await login(formData.email, formData.password, role);
       
@@ -53,6 +72,9 @@ const LoginForm = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
+      setLocalError("An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -74,6 +96,18 @@ const LoginForm = () => {
     }
   };
 
+  // Display form error if present
+  const renderError = () => {
+    if (localError) {
+      return (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md mb-4">
+          {localError}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <Card className="w-[350px] md:w-[450px] card-gradient shadow-lg">
       <CardHeader className="space-y-1">
@@ -83,6 +117,7 @@ const LoginForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {renderError()}
         <Tabs defaultValue="donor" onValueChange={(value) => setActiveTab(value as UserRole)}>
           <TabsList className="grid grid-cols-3 mb-6">
             <TabsTrigger value="donor" className="flex items-center gap-2">
@@ -136,9 +171,9 @@ const LoginForm = () => {
               <Button 
                 type="submit" 
                 className="w-full btn-blood flex gap-2"
-                disabled={isLoading}
+                disabled={isLoading || isSubmitting}
               >
-                {isLoading ? (
+                {(isLoading || isSubmitting) ? (
                   <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
                 ) : (
                   <LogIn className="h-4 w-4" />
@@ -185,9 +220,9 @@ const LoginForm = () => {
               <Button 
                 type="submit" 
                 className="w-full btn-blood flex gap-2"
-                disabled={isLoading}
+                disabled={isLoading || isSubmitting}
               >
-                {isLoading ? (
+                {(isLoading || isSubmitting) ? (
                   <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
                 ) : (
                   <LogIn className="h-4 w-4" />
@@ -234,9 +269,9 @@ const LoginForm = () => {
               <Button 
                 type="submit" 
                 className="w-full btn-blood flex gap-2"
-                disabled={isLoading}
+                disabled={isLoading || isSubmitting}
               >
-                {isLoading ? (
+                {(isLoading || isSubmitting) ? (
                   <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
                 ) : (
                   <LogIn className="h-4 w-4" />

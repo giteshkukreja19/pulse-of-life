@@ -1,6 +1,6 @@
 
 import { useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import LoginForm from "@/components/auth/LoginForm";
 import MainLayout from "@/components/layout/MainLayout";
 import { AuthContext } from "@/App";
@@ -8,21 +8,21 @@ import { toast } from "sonner";
 
 const Login = () => {
   const { isAuthenticated, authError } = useContext(AuthContext);
-  const navigate = useNavigate();
   
   useEffect(() => {
     document.title = "Login | Pulse of Life";
   }, []);
   
+  // Only show toast on initial mount if there's an error
   useEffect(() => {
     if (authError) {
       toast.error(authError);
     }
   }, [authError]);
   
+  // Redirect if user is already authenticated
   if (isAuthenticated) {
-    navigate("/dashboard");
-    return null;
+    return <Navigate to="/dashboard" />;
   }
   
   return (

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -71,7 +72,6 @@ const testSupabaseConnection = async () => {
     }
     
     console.log("Supabase connection successful!");
-    toast.success("Supabase connection established successfully.");
     return true;
   } catch (error) {
     console.error("Unexpected error in Supabase connection test:", error);
@@ -92,10 +92,38 @@ const App = () => {
   }, []);
   
   useEffect(() => {
-    const checkSession = async () => {
+    const setupAuth = async () => {
       setIsLoading(true);
       
       try {
+        // First set up the auth listener to prevent missing auth events
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (event === "SIGNED_IN" && session) {
+              setIsAuthenticated(true);
+              setUserId(session.user.id);
+              
+              // Use setTimeout to prevent potential Supabase deadlocks
+              setTimeout(async () => {
+                try {
+                  const { data: userData } = await supabase.auth.getUser();
+                  if (userData?.user) {
+                    const role = userData.user.user_metadata.role as UserRole;
+                    setUserRole(role);
+                  }
+                } catch (error) {
+                  console.error("Error getting user role:", error);
+                }
+              }, 0);
+            } else if (event === "SIGNED_OUT") {
+              setIsAuthenticated(false);
+              setUserRole(null);
+              setUserId(null);
+            }
+          }
+        );
+
+        // Then check for existing session
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -103,6 +131,7 @@ const App = () => {
           setAuthError(error.message);
           setIsAuthenticated(false);
           setUserRole(null);
+          setIsLoading(false);
           return;
         }
         
@@ -111,7 +140,7 @@ const App = () => {
           setUserId(data.session.user.id);
           
           const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
+          if (userData?.user) {
             const role = userData.user.user_metadata.role as UserRole;
             setUserRole(role);
           }
@@ -130,42 +159,17 @@ const App = () => {
       }
     };
     
-    checkSession();
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session) {
-          setIsAuthenticated(true);
-          setUserId(session.user.id);
-          
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const role = userData.user.user_metadata.role as UserRole;
-            setUserRole(role);
-          }
-        } else if (event === "SIGNED_OUT") {
-          setIsAuthenticated(false);
-          setUserRole(null);
-          setUserId(null);
-        }
-      }
-    );
-    
-    return () => {
-      if (authListener && authListener.subscription) {
-        authListener.subscription.unsubscribe();
-      }
-    };
+    setupAuth();
   }, []);
   
   const register = async (email: string, password: string, role: UserRole, metadata: any) => {
-    setIsLoading(true);
     setAuthError(null);
     
     try {
       if (!supabase) {
-        setAuthError("Supabase client is not initialized. Please check your configuration.");
-        toast.error("Supabase client is not initialized. Please check your configuration.");
+        const errMsg = "Supabase client is not initialized. Please check your configuration.";
+        setAuthError(errMsg);
+        toast.error(errMsg);
         return false;
       }
 
@@ -185,32 +189,36 @@ const App = () => {
       if (error) {
         console.error("Registration error:", error);
         setAuthError(error.message);
+        toast.error(error.message);
         return false;
       }
       
       if (data.user && data.user.identities && data.user.identities.length === 0) {
-        setAuthError("This email is already registered. Please log in instead.");
+        const errMsg = "This email is already registered. Please log in instead.";
+        setAuthError(errMsg);
+        toast.error(errMsg);
         return false;
       }
       
+      toast.success("Registration successful! Please check your email for verification.");
       return true;
     } catch (error) {
       console.error("Registration error:", error);
-      setAuthError("An unexpected error occurred");
+      const errMsg = "An unexpected error occurred";
+      setAuthError(errMsg);
+      toast.error(errMsg);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const login = async (email: string, password: string, role: UserRole) => {
-    setIsLoading(true);
     setAuthError(null);
     
     try {
       if (!supabase) {
-        setAuthError("Supabase client is not initialized. Please check your configuration.");
-        toast.error("Supabase client is not initialized. Please check your configuration.");
+        const errMsg = "Supabase client is not initialized. Please check your configuration.";
+        setAuthError(errMsg);
+        toast.error(errMsg);
         return false;
       }
       
@@ -229,9 +237,9 @@ const App = () => {
       if (data.user) {
         setIsAuthenticated(true);
         
-        const userRole = data.user.user_metadata.role;
+        const userRole = data.user.user_metadata?.role;
         
-        if (userRole !== role) {
+        if (userRole !== role && userRole !== null) {
           const errorMsg = `You're trying to log in as ${role}, but your account is registered as ${userRole}`;
           setAuthError(errorMsg);
           toast.error(errorMsg);
@@ -248,21 +256,19 @@ const App = () => {
       return false;
     } catch (error) {
       console.error("Login error:", error);
-      setAuthError("An unexpected error occurred");
-      toast.error("An unexpected error occurred during login");
+      const errMsg = "An unexpected error occurred during login";
+      setAuthError(errMsg);
+      toast.error(errMsg);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
   
   const logout = async () => {
-    setIsLoading(true);
-    
     try {
       if (!supabase) {
-        setAuthError("Supabase client is not initialized. Please check your configuration.");
-        toast.error("Supabase client is not initialized. Please check your configuration.");
+        const errMsg = "Supabase client is not initialized. Please check your configuration.";
+        setAuthError(errMsg);
+        toast.error(errMsg);
         return;
       }
       
@@ -271,15 +277,18 @@ const App = () => {
       if (error) {
         console.error("Logout error:", error);
         setAuthError(error.message);
+        toast.error(error.message);
       } else {
         setIsAuthenticated(false);
         setUserRole(null);
+        setUserId(null);
+        toast.success("You've been logged out successfully");
       }
     } catch (error) {
       console.error("Logout error:", error);
-      setAuthError("An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
+      const errMsg = "An unexpected error occurred during logout";
+      setAuthError(errMsg);
+      toast.error(errMsg);
     }
   };
   
