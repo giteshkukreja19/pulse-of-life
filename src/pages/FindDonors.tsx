@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, MapPin, Filter, User, Droplet } from "lucide-react";
+import { Search, MapPin, Filter, User, Droplet, Phone, Mail } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -23,10 +23,16 @@ import {
   TableCaption,
 } from "@/components/ui/table";
 import { useDonors } from "@/hooks/useDonors";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "@/App";
 
 const bloodGroups = ["All", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 const FindDonors = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useContext(AuthContext);
   const [searchLocation, setSearchLocation] = useState("");
   const [selectedBloodGroup, setSelectedBloodGroup] = useState("All");
 
@@ -39,18 +45,38 @@ const FindDonors = () => {
   // Filtering logic
   const filteredDonors = useMemo(() => {
     let result = donors;
+    
     if (selectedBloodGroup !== "All") {
       result = result.filter(
         (donor) => donor.blood_group?.toUpperCase() === selectedBloodGroup
       );
     }
+    
     if (searchLocation.trim()) {
+      const searchTerm = searchLocation.toLowerCase().trim();
       result = result.filter((donor) =>
-        donor.location.toLowerCase().includes(searchLocation.toLowerCase())
+        donor.location.toLowerCase().includes(searchTerm)
       );
     }
+    
     return result;
   }, [donors, selectedBloodGroup, searchLocation]);
+
+  const handleRequestDonation = (donorId: string, donorName: string, bloodGroup: string) => {
+    if (!isAuthenticated) {
+      toast.error("Please log in to request blood donations");
+      navigate("/login");
+      return;
+    }
+
+    // Store donor information in session storage to pre-fill the request form
+    sessionStorage.setItem("requestedDonorId", donorId);
+    sessionStorage.setItem("requestedDonorName", donorName);
+    sessionStorage.setItem("requestedBloodGroup", bloodGroup);
+    
+    navigate("/request");
+    toast.success(`Creating a request for ${donorName} with ${bloodGroup} blood group`);
+  };
 
   return (
     <MainLayout>
@@ -96,11 +122,10 @@ const FindDonors = () => {
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  {/* No manual search needed, filtering is live */}
-                  <Button className="btn-blood flex gap-2" disabled>
-                    <Search className="h-4 w-4" />
-                    Real-Time Search
-                  </Button>
+                  {/* No manual search button needed, filtering is live */}
+                  <div className="text-sm text-muted-foreground">
+                    Results update in real-time as you type
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -110,10 +135,9 @@ const FindDonors = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Available Donors</h2>
-              <Button variant="outline" size="sm" className="flex gap-2" disabled>
-                <Filter className="h-4 w-4" />
-                <span>Filters</span>
-              </Button>
+              <div className="text-sm text-muted-foreground">
+                Found {filteredDonors.length} donors
+              </div>
             </div>
             
             <div className="relative mt-2 overflow-x-auto rounded-lg border border-muted shadow-sm bg-white">
@@ -138,17 +162,24 @@ const FindDonors = () => {
                       <TableHead>
                         <Droplet className="inline mr-1 h-4 w-4" /> Blood Group
                       </TableHead>
-                      <TableHead>Location</TableHead>
+                      <TableHead>
+                        <MapPin className="inline mr-1 h-4 w-4" /> Location
+                      </TableHead>
                       <TableHead className="hidden md:table-cell">Last Donation</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
+                      <TableHead>
+                        <Mail className="inline mr-1 h-4 w-4" /> Contact
+                      </TableHead>
+                      <TableHead>
+                        <Phone className="inline mr-1 h-4 w-4" /> Phone
+                      </TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredDonors.map((donor) => (
                       <TableRow key={donor.id}>
-                        <TableCell>{donor.name}</TableCell>
-                        <TableCell>{donor.blood_group}</TableCell>
+                        <TableCell className="font-medium">{donor.name}</TableCell>
+                        <TableCell className="font-semibold text-blood">{donor.blood_group}</TableCell>
                         <TableCell>{donor.location}</TableCell>
                         <TableCell className="hidden md:table-cell">
                           {donor.last_donation
@@ -156,14 +187,26 @@ const FindDonors = () => {
                             : <span className="text-xs text-muted-foreground">N/A</span>}
                         </TableCell>
                         <TableCell>
-                          <a href={`mailto:${donor.email}`} className="text-primary underline">
-                            {donor.email}
+                          <a href={`mailto:${donor.email}`} className="text-primary underline flex items-center gap-1">
+                            <Mail className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline">{donor.email}</span>
+                            <span className="md:hidden">Email</span>
                           </a>
                         </TableCell>
                         <TableCell>
-                          <a href={`tel:${donor.phone}`} className="text-primary underline">
-                            {donor.phone}
+                          <a href={`tel:${donor.phone}`} className="text-primary underline flex items-center gap-1">
+                            <Phone className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline">{donor.phone}</span>
+                            <span className="md:hidden">Call</span>
                           </a>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            className="btn-blood"
+                            onClick={() => handleRequestDonation(donor.id, donor.name, donor.blood_group)}
+                          >
+                            Request
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
