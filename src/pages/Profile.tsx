@@ -35,7 +35,6 @@ import {
   AlertCircle,
   Heart,
   Clock,
-  Gps,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthContext } from "@/App";
@@ -48,6 +47,7 @@ const Profile = () => {
   const [profileData, setProfileData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [locationEnabled, setLocationEnabled] = useState(false);
 
   // Fetch current user's donor profile
   useEffect(() => {
@@ -144,6 +144,13 @@ const Profile = () => {
         toast.error("Geolocation failed.");
       }
     );
+  };
+
+  const handleLocationToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocationEnabled(e.target.checked);
+    if (locationEnabled) {
+      // Handle location toggle logic
+    }
   };
 
   if (loading) {
@@ -310,7 +317,7 @@ const Profile = () => {
                           title="Detect location"
                           onClick={handleGPSClick}
                         >
-                          <Gps className="h-4 w-4" />
+                          <MapPin className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

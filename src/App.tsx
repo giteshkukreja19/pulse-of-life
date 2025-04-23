@@ -25,6 +25,7 @@ interface AuthContextType {
   userRole: UserRole;
   authError: string | null;
   isLoading: boolean;
+  userId: string | null;
   login: (email: string, password: string, role: UserRole) => Promise<boolean>;
   register: (email: string, password: string, role: UserRole, metadata: any) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -35,6 +36,7 @@ export const AuthContext = createContext<AuthContextType>({
   userRole: null,
   authError: null,
   isLoading: false,
+  userId: null,
   login: async () => false,
   register: async () => false,
   logout: async () => {},
@@ -83,6 +85,7 @@ const App = () => {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   
   useEffect(() => {
     testSupabaseConnection();
@@ -105,6 +108,7 @@ const App = () => {
         
         if (data.session) {
           setIsAuthenticated(true);
+          setUserId(data.session.user.id);
           
           const { data: userData } = await supabase.auth.getUser();
           if (userData.user) {
@@ -114,11 +118,13 @@ const App = () => {
         } else {
           setIsAuthenticated(false);
           setUserRole(null);
+          setUserId(null);
         }
       } catch (error) {
         console.error("Error in session check:", error);
         setIsAuthenticated(false);
         setUserRole(null);
+        setUserId(null);
       } finally {
         setIsLoading(false);
       }
@@ -130,6 +136,7 @@ const App = () => {
       async (event, session) => {
         if (event === "SIGNED_IN" && session) {
           setIsAuthenticated(true);
+          setUserId(session.user.id);
           
           const { data: userData } = await supabase.auth.getUser();
           if (userData.user) {
@@ -139,6 +146,7 @@ const App = () => {
         } else if (event === "SIGNED_OUT") {
           setIsAuthenticated(false);
           setUserRole(null);
+          setUserId(null);
         }
       }
     );
@@ -283,6 +291,7 @@ const App = () => {
           userRole,
           authError,
           isLoading,
+          userId,
           login,
           register,
           logout

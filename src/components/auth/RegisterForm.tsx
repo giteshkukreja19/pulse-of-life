@@ -1,3 +1,4 @@
+
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "@/App";
@@ -20,13 +21,12 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, User, Heart, Building2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { UserPlus, Heart, User } from "lucide-react";
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 const RegisterForm = () => {
-  const [activeTab, setActiveTab] = useState("donor");
   const navigate = useNavigate();
   const { register, isLoading } = useContext(AuthContext);
   
@@ -38,11 +38,9 @@ const RegisterForm = () => {
     phone: "",
     bloodGroup: "",
     age: "",
-    address: "",
-    city: "",
-    state: "",
-    licenseNumber: "",
     zip: "",
+    isDonor: true,
+    isRecipient: false,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,10 +52,14 @@ const RegisterForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleCheckboxChange = (name: string) => (checked: boolean) => {
+    setFormData((prev) => ({ ...prev, [name]: checked }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword || !formData.bloodGroup) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -66,14 +68,9 @@ const RegisterForm = () => {
       toast.error("Passwords do not match");
       return;
     }
-    
-    if (activeTab === "hospital" && !formData.licenseNumber) {
-      toast.error("License number is required for hospital registration");
-      return;
-    }
-    
-    if ((activeTab === "donor" || activeTab === "recipient") && !formData.bloodGroup) {
-      toast.error("Blood group is required");
+
+    if (!formData.isDonor && !formData.isRecipient) {
+      toast.error("Please select at least one role (Donor or Recipient)");
       return;
     }
     
@@ -81,23 +78,17 @@ const RegisterForm = () => {
       const metadata: any = {
         name: formData.name,
         phone: formData.phone,
+        bloodGroup: formData.bloodGroup,
+        age: formData.age,
         zip: formData.zip,
+        isDonor: formData.isDonor,
+        isRecipient: formData.isRecipient,
       };
-      
-      if (activeTab === "donor" || activeTab === "recipient") {
-        metadata.bloodGroup = formData.bloodGroup;
-        metadata.age = formData.age;
-      } else if (activeTab === "hospital") {
-        metadata.address = formData.address;
-        metadata.city = formData.city;
-        metadata.state = formData.state;
-        metadata.licenseNumber = formData.licenseNumber;
-      }
       
       const success = await register(
         formData.email,
         formData.password,
-        activeTab as any,
+        formData.isDonor && formData.isRecipient ? "both" : formData.isDonor ? "donor" : "recipient",
         metadata
       );
       
@@ -120,274 +111,157 @@ const RegisterForm = () => {
       </CardHeader>
       
       <CardContent>
-        <Tabs defaultValue="donor" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-2 mb-6">
-            <TabsTrigger value="donor" className="flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              <span>Donor</span>
-            </TabsTrigger>
-            <TabsTrigger value="recipient" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span>Recipient</span>
-            </TabsTrigger>
-          </TabsList>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                name="name"
+                placeholder="John Doe"
+                required
+                value={formData.name}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="age">Age</Label>
+              <Input
+                id="age"
+                name="age"
+                type="number"
+                placeholder="21"
+                min="18"
+                max="65"
+                required
+                value={formData.age}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
           
-          <TabsContent value="donor">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="John Doe"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    name="age"
-                    type="number"
-                    placeholder="21"
-                    min="18"
-                    max="65"
-                    required
-                    value={formData.age}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    placeholder="+1 (234) 567-8901"
-                    required
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bloodGroup">Blood Group</Label>
-                  <Select 
-                    onValueChange={handleSelectChange("bloodGroup")}
-                    value={formData.bloodGroup}
-                  >
-                    <SelectTrigger id="bloodGroup">
-                      <SelectValue placeholder="Select Blood Group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bloodGroups.map((group) => (
-                        <SelectItem key={group} value={group}>
-                          {group}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="zip">Zip Code</Label>
-                <Input
-                  id="zip"
-                  name="zip"
-                  placeholder="12345"
-                  required
-                  value={formData.zip}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full btn-blood flex gap-2"
-                disabled={isLoading}
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="name@example.com"
+              required
+              value={formData.email}
+              onChange={handleInputChange}
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                required
+                value={formData.password}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                required
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                name="phone"
+                placeholder="+1 (234) 567-8901"
+                required
+                value={formData.phone}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bloodGroup">Blood Group</Label>
+              <Select 
+                onValueChange={handleSelectChange("bloodGroup")}
+                value={formData.bloodGroup}
               >
-                {isLoading ? (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
-                ) : (
-                  <UserPlus className="h-4 w-4" />
-                )}
+                <SelectTrigger id="bloodGroup">
+                  <SelectValue placeholder="Select Blood Group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bloodGroups.map((group) => (
+                    <SelectItem key={group} value={group}>
+                      {group}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="zip">Zip Code</Label>
+            <Input
+              id="zip"
+              name="zip"
+              placeholder="12345"
+              required
+              value={formData.zip}
+              onChange={handleInputChange}
+            />
+          </div>
+
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isDonor"
+                checked={formData.isDonor}
+                onCheckedChange={handleCheckboxChange("isDonor")}
+              />
+              <Label htmlFor="isDonor" className="flex items-center gap-2">
+                <Heart className="h-4 w-4" />
                 Register as Donor
-              </Button>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="recipient">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="John Doe"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    name="age"
-                    type="number"
-                    placeholder="21"
-                    required
-                    value={formData.age}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    placeholder="+1 (234) 567-8901"
-                    required
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bloodGroup">Blood Group Needed</Label>
-                  <Select 
-                    onValueChange={handleSelectChange("bloodGroup")}
-                    value={formData.bloodGroup}
-                  >
-                    <SelectTrigger id="bloodGroup">
-                      <SelectValue placeholder="Select Blood Group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bloodGroups.map((group) => (
-                        <SelectItem key={group} value={group}>
-                          {group}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="zip">Zip Code</Label>
-                <Input
-                  id="zip"
-                  name="zip"
-                  placeholder="12345"
-                  required
-                  value={formData.zip}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full btn-blood flex gap-2"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
-                ) : (
-                  <UserPlus className="h-4 w-4" />
-                )}
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isRecipient"
+                checked={formData.isRecipient}
+                onCheckedChange={handleCheckboxChange("isRecipient")}
+              />
+              <Label htmlFor="isRecipient" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
                 Register as Recipient
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
+              </Label>
+            </div>
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full btn-blood flex gap-2"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+            ) : (
+              <UserPlus className="h-4 w-4" />
+            )}
+            Create Account
+          </Button>
+        </form>
       </CardContent>
       
       <CardFooter className="flex flex-col space-y-4">
