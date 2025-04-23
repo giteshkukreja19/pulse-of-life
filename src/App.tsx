@@ -18,7 +18,7 @@ import NotFound from "./pages/NotFound";
 import RegisterHospital from "./pages/RegisterHospital";
 import { toast } from "sonner";
 
-export type UserRole = "donor" | "recipient" | "admin" | "hospital" | null;
+export type UserRole = "donor" | "recipient" | "admin" | "hospital" | "both" | null;
 
 interface AuthContextType {
   isAuthenticated: boolean;

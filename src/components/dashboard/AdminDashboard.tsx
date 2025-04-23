@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import HospitalUsersTable from "./HospitalUsersTable";
 
 interface AdminDashboardProps {
   onActionSuccess: (action: string) => void;
