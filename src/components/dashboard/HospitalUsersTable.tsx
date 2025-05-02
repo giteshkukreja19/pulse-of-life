@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface UserWithRole {
   id: string;
@@ -17,45 +18,75 @@ interface UserWithRole {
   user_id: string;
 }
 
-const HospitalUsersTable = () => {
-  const { data: users = [], isLoading, error } = useQuery({
-    queryKey: ["all-users"],
+const HospitalUsersTable = ({ roleFilter }: { roleFilter?: string }) => {
+  const { data: users = [], isLoading, error, refetch } = useQuery({
+    queryKey: ["all-users", roleFilter],
     queryFn: async () => {
-      // Pull donors and recipients from auth users through their metadata
-      const { data: donors = [], error: donorErr } = await supabase.from("donors").select("*");
-      
-      if (donorErr) {
-        console.error("Error fetching donors:", donorErr);
-        throw donorErr;
+      try {
+        // Pull donors from database
+        const { data: donors = [], error: donorErr } = await supabase.from("donors").select("*");
+        
+        if (donorErr) {
+          console.error("Error fetching donors:", donorErr);
+          throw donorErr;
+        }
+        
+        // Get all users from auth
+        const { data: { users: authUsers } = { users: [] }, error: authErr } = await supabase.auth.admin.listUsers();
+        
+        if (authErr) {
+          console.error("Error fetching auth users:", authErr);
+          // Continue with donors only if auth fails
+        }
+        
+        // Map donors to include role
+        let usersWithRoles: UserWithRole[] = donors.map(donor => ({
+          ...donor,
+          role: "donor"
+        }));
+        
+        // If roleFilter is provided, filter users by role
+        if (roleFilter) {
+          usersWithRoles = usersWithRoles.filter(user => 
+            user.role.toLowerCase() === roleFilter.toLowerCase()
+          );
+        }
+        
+        return usersWithRoles;
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+        toast.error("Failed to fetch users");
+        return [];
       }
-      
-      // Add role property to each user
-      const usersWithRoles: UserWithRole[] = donors.map(donor => ({
-        ...donor,
-        role: "donor"
-      }));
-      
-      return usersWithRoles;
-    }
+    },
+    refetchInterval: 10000 // Refresh every 10 seconds as backup
   });
 
+  // Set up real-time subscription
   useEffect(() => {
-    // Listen for real-time changes on donors table
-    const channel = supabase
-      .channel("realtime:all-users")
+    console.log("Setting up real-time subscription for users");
+    
+    // Listen for changes to donors table
+    const donorsChannel = supabase
+      .channel("donors-changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "donors" },
-        () => {
-          console.log("User data changed, refreshing...");
+        (payload) => {
+          console.log("Donors table changed:", payload);
+          // Force refresh data
+          refetch();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Donors subscription status:", status);
+      });
 
     return () => {
-      supabase.removeChannel(channel);
+      console.log("Cleaning up real-time subscriptions");
+      supabase.removeChannel(donorsChannel);
     };
-  }, []);
+  }, [refetch]);
 
   return (
     <div>

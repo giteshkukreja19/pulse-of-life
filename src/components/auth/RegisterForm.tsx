@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserPlus, Heart, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -56,6 +57,37 @@ const RegisterForm = () => {
     setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
+  const saveUserToDatabase = async (userId: string, userData: any, role: string) => {
+    try {
+      // Save to donors table if they're a donor
+      if (role === "donor" || role === "both") {
+        const { error: donorError } = await supabase.from("donors").insert({
+          user_id: userId,
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          blood_group: userData.bloodGroup,
+          location: userData.zip,
+        });
+
+        if (donorError) {
+          console.error("Error saving donor data:", donorError);
+          toast.error("Error saving donor profile. Please try again.");
+        } else {
+          console.log("Donor profile saved successfully");
+        }
+      }
+
+      // Could add recipient table saving here if needed
+      
+      return true;
+    } catch (error) {
+      console.error("Error saving user data:", error);
+      toast.error("Error saving user profile. Registration may be incomplete.");
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -85,19 +117,31 @@ const RegisterForm = () => {
         isRecipient: formData.isRecipient,
       };
       
+      const userRole = formData.isDonor && formData.isRecipient ? "both" : formData.isDonor ? "donor" : "recipient";
+      
       const success = await register(
         formData.email,
         formData.password,
-        formData.isDonor && formData.isRecipient ? "both" : formData.isDonor ? "donor" : "recipient",
+        userRole,
         metadata
       );
       
       if (success) {
+        // Get the user ID from the newly registered user
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
+          console.log("User registered with ID:", authData.user.id);
+          
+          // Save additional user data to database tables
+          await saveUserToDatabase(authData.user.id, formData, userRole);
+        }
+        
         toast.success("Registration successful! Please check your email for verification and then log in.");
         navigate("/login");
       }
     } catch (error) {
       console.error("Registration error:", error);
+      toast.error("Registration failed. Please try again.");
     }
   };
 

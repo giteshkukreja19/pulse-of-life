@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Activity, Users, Hospital, Droplet, Calendar, 
   FileText, Settings, PieChart, UserCheck, Database,
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useBloodRequestsRealtime } from "@/hooks/useBloodRequestsRealtime";
 import { useHospitals } from "@/hooks/useHospitals";
 import { useDonors } from "@/hooks/useDonors";
@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import HospitalUsersTable from "./HospitalUsersTable";
-import { toast } from "sonner";
 
 interface AdminDashboardProps {
   onActionSuccess: (action: string) => void;
@@ -35,6 +34,16 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
   const { data: bloodRequests = [], isLoading: isLoadingRequests } = useBloodRequestsRealtime();
   const { data: hospitals = [], isLoading: isLoadingHospitals } = useHospitals();
   const { data: donors = [], isLoading: isLoadingDonors } = useDonors();
+  const [requestRefreshTrigger, setRequestRefreshTrigger] = useState(0);
+
+  // Force refresh data every 30 seconds as a fallback
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRequestRefreshTrigger(prev => prev + 1);
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleApprove = async (id: string) => {
     try {
@@ -70,9 +79,14 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
     }
   };
 
+  // Calculate dashboard stats
   const pendingRequests = bloodRequests.filter(req => req.status === 'pending');
   const activeHospitals = hospitals.filter(h => h.status === 'active');
   const totalDonors = donors?.length || 0;
+  const approvedRequests = bloodRequests.filter(r => r.status === 'approved').length;
+  const successRate = bloodRequests.length > 0 
+    ? Math.round((approvedRequests / bloodRequests.length) * 100)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -121,7 +135,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
 
         <StatCard
           title="Success Rate"
-          value={`${Math.round((bloodRequests.filter(r => r.status === 'approved').length / (bloodRequests.length || 1)) * 100)}%`}
+          value={`${successRate}%`}
           icon={<CheckCircle className="h-5 w-5 text-blood" />}
           description="Approved requests"
         />

@@ -15,6 +15,8 @@ import { AuthContext } from "@/App";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import HospitalUsersTable from "./HospitalUsersTable";
 
 interface HospitalDashboardProps {
   onActionSuccess: (action: string) => void;
@@ -27,7 +29,6 @@ const HospitalDashboard = ({ onActionSuccess, userName }: HospitalDashboardProps
   const [bloodTypeFilter, setBloodTypeFilter] = useState("");
   const [distanceFilter, setDistanceFilter] = useState("5");
   const { userId } = useContext(AuthContext);
-  const { toast } = useToast();
   const navigate = useNavigate();
   
   // Get real-time blood requests for this hospital
@@ -46,6 +47,30 @@ const HospitalDashboard = ({ onActionSuccess, userName }: HospitalDashboardProps
   useEffect(() => {
     setIsLoadingDonors(true);
     
+    const fetchNearbyDonors = async () => {
+      try {
+        let query = supabase.from("donors").select("*");
+        
+        if (bloodTypeFilter) {
+          query = query.eq("blood_group", bloodTypeFilter);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        setNearbyDonors(data || []);
+        setIsLoadingDonors(false);
+      } catch (error) {
+        console.error("Error fetching nearby donors:", error);
+        toast.error("Failed to fetch nearby donors. Please try again.");
+        setIsLoadingDonors(false);
+      }
+    };
+    
+    // Initial fetch
+    fetchNearbyDonors();
+    
     // Setup real-time channel for donors
     const channel = supabase
       .channel("nearby-donors-realtime")
@@ -53,6 +78,7 @@ const HospitalDashboard = ({ onActionSuccess, userName }: HospitalDashboardProps
         "postgres_changes",
         { event: "*", schema: "public", table: "donors" },
         () => {
+          console.log("Donors data changed, refreshing...");
           fetchNearbyDonors();
         }
       )
@@ -60,42 +86,11 @@ const HospitalDashboard = ({ onActionSuccess, userName }: HospitalDashboardProps
         console.log("Nearby donors subscription status:", status);
       });
       
-    // Initial fetch
-    fetchNearbyDonors();
-    
     return () => {
       console.log("Unsubscribing from donors real-time updates");
       supabase.removeChannel(channel);
     };
   }, [bloodTypeFilter, distanceFilter]);
-  
-  const fetchNearbyDonors = async () => {
-    try {
-      let query = supabase.from("donors").select("*");
-      
-      if (bloodTypeFilter) {
-        query = query.eq("blood_group", bloodTypeFilter);
-      }
-      
-      // In a real application, we would use geographic filtering
-      // For now, we'll just fetch all donors
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      setNearbyDonors(data || []);
-      setIsLoadingDonors(false);
-    } catch (error) {
-      console.error("Error fetching nearby donors:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch nearby donors. Please try again.",
-        variant: "destructive",
-      });
-      setIsLoadingDonors(false);
-    }
-  };
   
   const createRequest = () => {
     navigate("/request");
@@ -182,6 +177,10 @@ const HospitalDashboard = ({ onActionSuccess, userName }: HospitalDashboardProps
           <TabsTrigger value="donors" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             <span>Nearby Donors</span>
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>All Users</span>
           </TabsTrigger>
           <TabsTrigger value="inventory" className="flex items-center gap-2">
             <Droplet className="h-4 w-4" />
@@ -375,6 +374,18 @@ const HospitalDashboard = ({ onActionSuccess, userName }: HospitalDashboardProps
                   </TableBody>
                 </Table>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="users" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>All Registered Users</CardTitle>
+              <CardDescription>View users in real-time</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HospitalUsersTable roleFilter="donor" />
             </CardContent>
           </Card>
         </TabsContent>
