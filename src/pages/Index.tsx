@@ -81,7 +81,7 @@ const Index = () => {
                 <div className="absolute -top-6 -left-6 w-12 h-12 bg-blood-light rounded-full opacity-70"></div>
                 <div className="absolute -bottom-8 -right-8 w-16 h-16 bg-blood-light rounded-full opacity-50"></div>
                 <img 
-                  src="https://images.unsplash.com/photo-1615461065624-21b332397151?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80" 
+                  src="/lovable-uploads/8b908821-4ae2-4b61-9dc1-38fc916f2cf3.png" 
                   alt="Blood Donation"
                   className="w-full max-w-md rounded-lg shadow-2xl object-cover"
                 />
