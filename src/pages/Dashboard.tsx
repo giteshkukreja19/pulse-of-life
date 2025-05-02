@@ -9,11 +9,17 @@ import HospitalDashboard from "@/components/dashboard/HospitalDashboard";
 import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/App";
 import { supabase } from "@/integrations/supabase/client";
+import { useBloodRequestsRealtime } from "@/hooks/useBloodRequestsRealtime";
 
 const Dashboard = () => {
-  const { isAuthenticated, userRole } = useContext(AuthContext);
+  const { isAuthenticated, userRole, userId } = useContext(AuthContext);
   const { toast } = useToast();
   const [userName, setUserName] = useState("");
+  
+  // Get blood requests in real-time, filtered by user role
+  const { data: bloodRequests = [] } = useBloodRequestsRealtime(
+    userRole === 'admin' ? undefined : { userId }
+  );
   
   useEffect(() => {
     const getUserInfo = async () => {
@@ -53,7 +59,10 @@ const Dashboard = () => {
         )}
         
         {userRole === "recipient" && (
-          <RecipientDashboard onActionSuccess={handleActionSuccess} />
+          <RecipientDashboard 
+            onActionSuccess={handleActionSuccess} 
+            bloodRequests={bloodRequests}
+          />
         )}
         
         {userRole === "admin" && (

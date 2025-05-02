@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useBloodRequests } from "@/hooks/useBloodRequests";
+import { useBloodRequestsRealtime } from "@/hooks/useBloodRequestsRealtime";
 import { useHospitals } from "@/hooks/useHospitals";
 import { useDonors } from "@/hooks/useDonors";
 import StatCard from "./StatCard";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import HospitalUsersTable from "./HospitalUsersTable";
+import { toast } from "sonner";
 
 interface AdminDashboardProps {
   onActionSuccess: (action: string) => void;
@@ -31,8 +32,7 @@ interface AdminDashboardProps {
 
 const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { toast } = useToast();
-  const { data: bloodRequests = [], isLoading: isLoadingRequests } = useBloodRequests();
+  const { data: bloodRequests = [], isLoading: isLoadingRequests } = useBloodRequestsRealtime();
   const { data: hospitals = [], isLoading: isLoadingHospitals } = useHospitals();
   const { data: donors = [], isLoading: isLoadingDonors } = useDonors();
 
@@ -46,17 +46,10 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
       if (error) throw error;
 
       onActionSuccess(`Request ${id} approved`);
-      toast({
-        title: "Success",
-        description: "Blood request approved successfully",
-      });
+      toast.success("Blood request approved successfully");
     } catch (error) {
       console.error('Error approving request:', error);
-      toast({
-        title: "Error",
-        description: "Failed to approve request",
-        variant: "destructive",
-      });
+      toast.error("Failed to approve request");
     }
   };
 
@@ -70,17 +63,10 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
       if (error) throw error;
 
       onActionSuccess(`Request ${id} rejected`);
-      toast({
-        title: "Success",
-        description: "Blood request rejected successfully",
-      });
+      toast.success("Blood request rejected successfully");
     } catch (error) {
       console.error('Error rejecting request:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reject request",
-        variant: "destructive",
-      });
+      toast.error("Failed to reject request");
     }
   };
 
@@ -163,7 +149,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
                 <CardTitle>Blood Requests</CardTitle>
-                <CardDescription>Monitor and manage all blood donation requests</CardDescription>
+                <CardDescription>Monitor and manage all blood donation requests in real-time</CardDescription>
               </div>
               <div className="flex w-full max-w-sm items-center space-x-2">
                 <Input 
@@ -326,7 +312,7 @@ const AdminDashboard = ({ onActionSuccess }: AdminDashboardProps) => {
           <Card>
             <CardHeader>
               <CardTitle>Registered Donors</CardTitle>
-              <CardDescription>View all blood donors</CardDescription>
+              <CardDescription>View all blood donors in real-time</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoadingDonors ? (
