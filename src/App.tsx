@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,14 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import RegisterHospital from "./pages/RegisterHospital";
 import { toast } from "sonner";
+
+// Admin pages
+import BloodInventory from "./pages/admin/BloodInventory";
+import Reports from "./pages/admin/Reports";
+import Settings from "./pages/admin/Settings";
+import BloodRequests from "./pages/admin/BloodRequests";
+import Donors from "./pages/admin/Donors";
+import Hospitals from "./pages/admin/Hospitals";
 
 export type UserRole = "donor" | "recipient" | "admin" | "hospital" | "both" | null;
 
@@ -54,6 +61,40 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading, userRole } = useContext(AuthContext);
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+    </div>;
+  }
+  
+  if (!isAuthenticated || userRole !== "admin") {
+    toast.error("You do not have permission to access this page");
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const HospitalRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading, userRole } = useContext(AuthContext);
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+    </div>;
+  }
+  
+  if (!isAuthenticated || (userRole !== "hospital" && userRole !== "admin")) {
+    toast.error("You do not have permission to access this page");
+    return <Navigate to="/dashboard" replace />;
   }
   
   return <>{children}</>;
@@ -314,6 +355,9 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/register-hospital" element={<RegisterHospital />} />
+              <Route path="/contact" element={<Contact />} />
+              
+              {/* Protected Routes */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
@@ -334,7 +378,62 @@ const App = () => {
                   <Profile />
                 </ProtectedRoute>
               } />
-              <Route path="/contact" element={<Contact />} />
+
+              {/* Admin Routes */}
+              <Route path="/admin/inventory" element={
+                <AdminRoute>
+                  <BloodInventory />
+                </AdminRoute>
+              } />
+              <Route path="/admin/reports" element={
+                <AdminRoute>
+                  <Reports />
+                </AdminRoute>
+              } />
+              <Route path="/admin/settings" element={
+                <AdminRoute>
+                  <Settings />
+                </AdminRoute>
+              } />
+              <Route path="/admin/requests" element={
+                <AdminRoute>
+                  <BloodRequests />
+                </AdminRoute>
+              } />
+              <Route path="/admin/donors" element={
+                <AdminRoute>
+                  <Donors />
+                </AdminRoute>
+              } />
+              <Route path="/admin/hospitals" element={
+                <AdminRoute>
+                  <Hospitals />
+                </AdminRoute>
+              } />
+              
+              {/* Hospital Routes */}
+              <Route path="/hospital/inventory" element={
+                <HospitalRoute>
+                  <BloodInventory />
+                </HospitalRoute>
+              } />
+              <Route path="/hospital/reports" element={
+                <HospitalRoute>
+                  <Reports />
+                </HospitalRoute>
+              } />
+              <Route path="/hospital/requests" element={
+                <HospitalRoute>
+                  <BloodRequests />
+                </HospitalRoute>
+              } />
+              <Route path="/hospital/donors" element={
+                <HospitalRoute>
+                  <Donors />
+                </HospitalRoute>
+              } />
+              
+              {/* 404 Route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

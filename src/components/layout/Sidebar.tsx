@@ -5,12 +5,15 @@ import {
   Settings, LogOut, Heart, Hospital, Database,
   LineChart, Calendar, FileText, User
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 interface SidebarProps {
   userRole: "admin" | "hospital" | "donor" | "recipient";
 }
 
 export function Sidebar({ userRole }: SidebarProps) {
+  const location = useLocation();
+  
   const adminLinks = [
     { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
     { href: "/admin/requests", label: "Blood Requests", icon: <Activity className="h-5 w-5" /> },
@@ -40,7 +43,11 @@ export function Sidebar({ userRole }: SidebarProps) {
           <Link
             key={link.href}
             to={link.href}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-900 transition-all hover:text-blood"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
+              location.pathname === link.href 
+              ? "bg-blood/10 text-blood font-medium" 
+              : "text-slate-900 hover:text-blood"
+            }`}
           >
             {link.icon}
             {link.label}
