@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, handleSupabaseError } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export interface BloodRequestFilters {
@@ -50,8 +50,7 @@ export const useBloodRequestsRealtime = (filters?: BloodRequestFilters) => {
         console.log(`Successfully fetched ${data?.length} blood requests`);
         return data || [];
       } catch (err) {
-        console.error("Failed to fetch blood requests:", err);
-        toast.error("Failed to fetch blood requests");
+        handleSupabaseError(err, "Failed to fetch blood requests");
         return [];
       }
     },

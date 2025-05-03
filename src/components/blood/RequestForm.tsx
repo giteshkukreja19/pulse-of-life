@@ -24,6 +24,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useContext } from "react";
 import { AuthContext } from "@/App";
+import { useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const urgencyLevels = [
@@ -33,55 +37,46 @@ const urgencyLevels = [
   { value: "critical", label: "Critical - Immediate need" },
 ];
 
+// Form validation schema
+const requestFormSchema = z.object({
+  patientName: z.string().min(2, "Patient name is required"),
+  bloodGroup: z.string().min(1, "Blood group is required"),
+  units: z.string().min(1, "Number of units is required"),
+  urgency: z.string().min(1, "Urgency level is required"),
+  hospital: z.string().min(2, "Hospital name is required"),
+  location: z.string().min(2, "Location is required"),
+  contactName: z.string().min(2, "Contact name is required"),
+  contactPhone: z.string().min(10, "Valid phone number is required"),
+  notes: z.string().optional(),
+});
+
+type RequestFormValues = z.infer<typeof requestFormSchema>;
+
 const RequestForm = () => {
   const { toast } = useToast();
   const { userId } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    patientName: "",
-    bloodGroup: "",
-    units: "1",
-    urgency: "",
-    hospital: "",
-    location: "",
-    contactName: "",
-    contactPhone: "",
-    notes: "",
+  
+  const form = useForm<RequestFormValues>({
+    resolver: zodResolver(requestFormSchema),
+    defaultValues: {
+      patientName: "",
+      bloodGroup: "",
+      units: "1",
+      urgency: "",
+      hospital: "",
+      location: "",
+      contactName: "",
+      contactPhone: "",
+      notes: "",
+    },
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name: string) => (value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const onSubmit = async (values: RequestFormValues) => {
     if (!userId) {
       toast({
         title: "Authentication required",
         description: "Please log in to submit a blood request",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validate required fields
-    const requiredFields = [
-      'patientName', 'bloodGroup', 'units', 'urgency', 
-      'hospital', 'location', 'contactName', 'contactPhone'
-    ];
-    
-    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
-    
-    if (missingFields.length > 0) {
-      toast({
-        title: "Missing required fields",
-        description: `Please fill in all required fields: ${missingFields.join(', ')}`,
         variant: "destructive",
       });
       return;
@@ -92,23 +87,20 @@ const RequestForm = () => {
     try {
       // Submit the blood request to Supabase
       const { data, error } = await supabase.from("blood_requests").insert({
-        patient_name: formData.patientName,
-        blood_group: formData.bloodGroup,
-        units: parseInt(formData.units),
-        urgency: formData.urgency,
-        hospital: formData.hospital,
-        location: formData.location,
-        contact_name: formData.contactName,
-        contact_phone: formData.contactPhone,
-        notes: formData.notes,
+        patient_name: values.patientName,
+        blood_group: values.bloodGroup,
+        units: parseInt(values.units),
+        urgency: values.urgency,
+        hospital: values.hospital,
+        location: values.location,
+        contact_name: values.contactName,
+        contact_phone: values.contactPhone,
+        notes: values.notes,
         user_id: userId,
         status: 'pending'
       });
       
       if (error) throw error;
-      
-      // Notify users with matching blood groups in the same location
-      // This would be handled by a real-time subscription on the donor side
       
       toast({
         title: "Request submitted",
@@ -116,7 +108,7 @@ const RequestForm = () => {
       });
       
       // Reset form after successful submission
-      setFormData({
+      form.reset({
         patientName: "",
         bloodGroup: "",
         units: "1",
@@ -141,170 +133,219 @@ const RequestForm = () => {
   };
 
   return (
-    <Card className="card-gradient shadow-lg">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Request Blood</CardTitle>
+    <Card className="shadow-lg border-navy/20 bg-white">
+      <CardHeader className="space-y-1 bg-white border-b">
+        <CardTitle className="text-2xl font-bold text-navy">Request Blood</CardTitle>
         <CardDescription>
           Fill out this form to request blood donation. We'll match you with potential donors.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-800">
-                For critical emergencies, please also contact your local hospital or blood bank directly 
-                after submitting this request.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="patientName">Patient Name</Label>
-                <Input
-                  id="patientName"
+      <CardContent className="pt-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  For critical emergencies, please also contact your local hospital or blood bank directly 
+                  after submitting this request.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="patientName"
-                  placeholder="Full name of the patient"
-                  required
-                  value={formData.patientName}
-                  onChange={handleInputChange}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Patient Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Full name of the patient" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="bloodGroup"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Blood Group Needed</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Blood Group" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {bloodGroups.map((group) => (
+                            <SelectItem key={group} value={group}>
+                              {group}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="bloodGroup">Blood Group Needed</Label>
-                <Select 
-                  onValueChange={handleSelectChange("bloodGroup")}
-                  value={formData.bloodGroup}
-                  required
-                >
-                  <SelectTrigger id="bloodGroup">
-                    <SelectValue placeholder="Select Blood Group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bloodGroups.map((group) => (
-                      <SelectItem key={group} value={group}>
-                        {group}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="units">Units Required</Label>
-                <Input
-                  id="units"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="units"
-                  type="number"
-                  min="1"
-                  max="10"
-                  required
-                  value={formData.units}
-                  onChange={handleInputChange}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Units Required</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number"
+                          min="1"
+                          max="10"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="urgency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Urgency Level</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Urgency Level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {urgencyLevels.map((level) => (
+                            <SelectItem key={level.value} value={level.value}>
+                              {level.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="urgency">Urgency Level</Label>
-                <Select 
-                  onValueChange={handleSelectChange("urgency")}
-                  value={formData.urgency}
-                  required
-                >
-                  <SelectTrigger id="urgency">
-                    <SelectValue placeholder="Select Urgency Level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {urgencyLevels.map((level) => (
-                      <SelectItem key={level.value} value={level.value}>
-                        {level.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="hospital">Hospital/Medical Center</Label>
-                <Input
-                  id="hospital"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="hospital"
-                  placeholder="Name of the hospital"
-                  required
-                  value={formData.hospital}
-                  onChange={handleInputChange}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hospital/Medical Center</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Name of the hospital"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="location">Postal Code/ZIP</Label>
-                <Input
-                  id="location"
+                
+                <FormField
+                  control={form.control}
                   name="location"
-                  placeholder="Enter postal/ZIP code"
-                  required
-                  value={formData.location}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="contactName">Contact Person</Label>
-                <Input
-                  id="contactName"
-                  name="contactName"
-                  placeholder="Name of the contact person"
-                  required
-                  value={formData.contactName}
-                  onChange={handleInputChange}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code/ZIP</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter postal/ZIP code"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="contactPhone">Contact Phone</Label>
-                <Input
-                  id="contactPhone"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="contactName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Person</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Name of the contact person"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="contactPhone"
-                  placeholder="+1 (234) 567-8901"
-                  required
-                  value={formData.contactPhone}
-                  onChange={handleInputChange}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Phone</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="+1 (234) 567-8901"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Notes</Label>
-              <Textarea
-                id="notes"
+              
+              <FormField
+                control={form.control}
                 name="notes"
-                placeholder="Any additional information that might be helpful"
-                rows={3}
-                value={formData.notes}
-                onChange={handleInputChange}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional Notes</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Any additional information that might be helpful"
+                        rows={3}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-        </form>
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-navy hover:bg-navy/90 text-white"
+              disabled={loading}
+            >
+              {loading ? "Submitting..." : "Submit Blood Request"}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
-      <CardFooter>
-        <Button 
-          type="submit" 
-          className="w-full btn-blood"
-          onClick={(e) => handleSubmit(e as React.FormEvent)}
-          disabled={loading}
-        >
-          {loading ? "Submitting..." : "Submit Blood Request"}
-        </Button>
-      </CardFooter>
     </Card>
   );
 };
