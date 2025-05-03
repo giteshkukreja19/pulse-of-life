@@ -103,7 +103,7 @@ const RequestBlood = () => {
         location: profileData.location || "Not specified",
         contact_name: profileData.name || "Contact person",
         contact_phone: profileData.phone || "Not provided",
-        notes: "Auto-filled request from profile",
+        notes: "Request submitted from profile",
         user_id: userId,
         status: 'pending'
       });

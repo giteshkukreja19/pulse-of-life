@@ -21,8 +21,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { UserPlus, Heart, User } from "lucide-react";
+import { UserPlus, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -39,9 +38,7 @@ const RegisterForm = () => {
     phone: "",
     bloodGroup: "",
     age: "",
-    zip: "",
-    isDonor: true,
-    isRecipient: false,
+    city: "", // Changed from zip to city
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,34 +50,26 @@ const RegisterForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckboxChange = (name: string) => (checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [name]: checked }));
-  };
-
-  const saveUserToDatabase = async (userId: string, userData: any, role: string) => {
+  const saveUserToDatabase = async (userId: string, userData: any) => {
     try {
-      // Save to donors table if they're a donor
-      if (role === "donor" || role === "both") {
-        const { error: donorError } = await supabase.from("donors").insert({
-          user_id: userId,
-          name: userData.name,
-          email: userData.email,
-          phone: userData.phone,
-          blood_group: userData.bloodGroup,
-          location: userData.zip,
-        });
+      // Save to donors table for all users - everyone is both donor and recipient
+      const { error: donorError } = await supabase.from("donors").insert({
+        user_id: userId,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        blood_group: userData.bloodGroup,
+        location: userData.city, // Use city instead of zip
+      });
 
-        if (donorError) {
-          console.error("Error saving donor data:", donorError);
-          toast.error("Error saving donor profile. Please try again.");
-        } else {
-          console.log("Donor profile saved successfully");
-        }
+      if (donorError) {
+        console.error("Error saving user data:", donorError);
+        toast.error("Error saving user profile. Please try again.");
+        return false;
+      } else {
+        console.log("User profile saved successfully");
+        return true;
       }
-
-      // Could add recipient table saving here if needed
-      
-      return true;
     } catch (error) {
       console.error("Error saving user data:", error);
       toast.error("Error saving user profile. Registration may be incomplete.");
@@ -100,11 +89,6 @@ const RegisterForm = () => {
       toast.error("Passwords do not match");
       return;
     }
-
-    if (!formData.isDonor && !formData.isRecipient) {
-      toast.error("Please select at least one role (Donor or Recipient)");
-      return;
-    }
     
     try {
       const metadata: any = {
@@ -112,12 +96,14 @@ const RegisterForm = () => {
         phone: formData.phone,
         bloodGroup: formData.bloodGroup,
         age: formData.age,
-        zip: formData.zip,
-        isDonor: formData.isDonor,
-        isRecipient: formData.isRecipient,
+        city: formData.city,
+        // All users are both donors and recipients by default
+        isDonor: true,
+        isRecipient: true,
       };
       
-      const userRole = formData.isDonor && formData.isRecipient ? "both" : formData.isDonor ? "donor" : "recipient";
+      // Everyone is 'both' by default
+      const userRole = "both";
       
       const success = await register(
         formData.email,
@@ -132,8 +118,8 @@ const RegisterForm = () => {
         if (authData?.user) {
           console.log("User registered with ID:", authData.user.id);
           
-          // Save additional user data to database tables
-          await saveUserToDatabase(authData.user.id, formData, userRole);
+          // Save user data to database tables
+          await saveUserToDatabase(authData.user.id, formData);
         }
         
         toast.success("Registration successful! Please check your email for verification and then log in.");
@@ -257,40 +243,15 @@ const RegisterForm = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="zip">Zip Code</Label>
+            <Label htmlFor="city">City</Label>
             <Input
-              id="zip"
-              name="zip"
-              placeholder="12345"
+              id="city"
+              name="city"
+              placeholder="Mumbai"
               required
-              value={formData.zip}
+              value={formData.city}
               onChange={handleInputChange}
             />
-          </div>
-
-          <div className="flex flex-col space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isDonor"
-                checked={formData.isDonor}
-                onCheckedChange={handleCheckboxChange("isDonor")}
-              />
-              <Label htmlFor="isDonor" className="flex items-center gap-2">
-                <Heart className="h-4 w-4" />
-                Register as Donor
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isRecipient"
-                checked={formData.isRecipient}
-                onCheckedChange={handleCheckboxChange("isRecipient")}
-              />
-              <Label htmlFor="isRecipient" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Register as Recipient
-              </Label>
-            </div>
           </div>
           
           <Button 
