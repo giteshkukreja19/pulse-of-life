@@ -14,5 +14,26 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
     persistSession: true,
     storage: localStorage
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 });
+
+// Enable realtime for all tables for better data sync
+const setupRealtimeSubscription = async () => {
+  try {
+    // Enable realtime on required tables
+    await supabase.channel('public:blood_requests').subscribe();
+    await supabase.channel('public:donors').subscribe();
+    await supabase.channel('public:hospitals').subscribe();
+    console.log("Realtime subscriptions established for all tables");
+  } catch (error) {
+    console.error("Error setting up realtime subscriptions:", error);
+  }
+};
+
+// Call this function when the app initializes
+setupRealtimeSubscription();

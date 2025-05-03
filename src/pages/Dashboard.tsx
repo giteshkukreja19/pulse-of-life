@@ -10,24 +10,37 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/App";
 import { supabase } from "@/integrations/supabase/client";
 import { useBloodRequestsRealtime } from "@/hooks/useBloodRequestsRealtime";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const { isAuthenticated, userRole, userId } = useContext(AuthContext);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const [userName, setUserName] = useState("");
   
-  // Get blood requests in real-time, filtered by user role
-  const { data: bloodRequests = [] } = useBloodRequestsRealtime(
+  console.log("Dashboard - Auth Context:", { isAuthenticated, userRole, userId });
+  
+  // Get blood requests in real-time, based on user role
+  const { data: bloodRequests = [], isLoading: isLoadingRequests } = useBloodRequestsRealtime(
     userRole === 'admin' ? undefined : { userId }
   );
   
   useEffect(() => {
+    console.log(`Dashboard - Fetched ${bloodRequests.length} blood requests`);
+  }, [bloodRequests]);
+  
+  useEffect(() => {
     const getUserInfo = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Get name from user metadata or use email as fallback
-        const userDisplayName = user.user_metadata?.name || user.email || "";
-        setUserName(userDisplayName);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Get name from user metadata or use email as fallback
+          const userDisplayName = user.user_metadata?.name || user.email || "";
+          setUserName(userDisplayName);
+          console.log("Dashboard - Got user info:", { userDisplayName });
+        }
+      } catch (error) {
+        console.error("Error getting user info:", error);
+        toast.error("Failed to load user information");
       }
     };
     
@@ -37,16 +50,19 @@ const Dashboard = () => {
   }, [isAuthenticated]);
   
   if (!isAuthenticated) {
+    console.log("Dashboard - Not authenticated, redirecting to login");
     return <Navigate to="/login" />;
   }
   
   const handleActionSuccess = (action: string) => {
-    toast({
+    uiToast({
       title: "Success",
       description: `${action} completed successfully.`,
       variant: "default",
     });
   };
+
+  console.log(`Dashboard - Rendering dashboard for role: ${userRole}`);
 
   return (
     <MainLayout>
