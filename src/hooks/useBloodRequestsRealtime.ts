@@ -56,11 +56,14 @@ export const useBloodRequestsRealtime = (filters?: BloodRequestFilters) => {
       }
     },
     refetchInterval: 30000, // Fallback refetch every 30 seconds
+    staleTime: 10000, // Consider data fresh for 10 seconds
+    retry: 3, // Retry failed requests 3 times
   });
 
   useEffect(() => {
-    // Setup realtime updates with proper channel naming
-    const channelName = `blood-requests-realtime-${filters?.userId || 'all'}-changes`;
+    // Create a unique channel name using all filter values
+    const filterValues = filters ? Object.values(filters).filter(Boolean).join('-') : 'all';
+    const channelName = `blood-requests-${filterValues}-${Date.now()}`;
     console.log(`Setting up realtime channel: ${channelName}`);
     
     const channel = supabase
@@ -76,13 +79,23 @@ export const useBloodRequestsRealtime = (filters?: BloodRequestFilters) => {
       )
       .subscribe((status) => {
         console.log(`Blood requests realtime subscription status (${channelName}):`, status);
+        
+        if (status === 'CHANNEL_ERROR') {
+          console.error(`Channel error for ${channelName}. Attempting to reconnect...`);
+          setTimeout(() => {
+            channel.subscribe();
+          }, 5000);
+        }
       });
+
+    // Make an initial refetch to ensure we have the latest data
+    query.refetch();
 
     return () => {
       console.log(`Unsubscribing from blood requests realtime updates (${channelName})`);
       supabase.removeChannel(channel);
     };
-  }, [query, filters?.userId]);
+  }, [query, filters]);
 
   return query;
 };

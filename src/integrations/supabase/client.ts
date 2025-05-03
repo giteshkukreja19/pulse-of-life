@@ -22,18 +22,61 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-// Enable realtime for all tables for better data sync
+// Enhanced realtime subscription setup with better error handling and retry logic
 const setupRealtimeSubscription = async () => {
   try {
     // Enable realtime on required tables
-    await supabase.channel('public:blood_requests').subscribe();
-    await supabase.channel('public:donors').subscribe();
-    await supabase.channel('public:hospitals').subscribe();
+    const bloodRequestsChannel = supabase.channel('public:blood_requests');
+    const donorsChannel = supabase.channel('public:donors');
+    const hospitalsChannel = supabase.channel('public:hospitals');
+    
+    // Subscribe to all channels with proper error handling
+    await bloodRequestsChannel.subscribe((status) => {
+      console.log("Blood requests channel status:", status);
+      
+      if (status === 'CHANNEL_ERROR') {
+        console.error("Error with blood_requests channel. Reconnecting in 5s...");
+        setTimeout(() => {
+          bloodRequestsChannel.subscribe();
+        }, 5000);
+      }
+    });
+    
+    await donorsChannel.subscribe((status) => {
+      console.log("Donors channel status:", status);
+      
+      if (status === 'CHANNEL_ERROR') {
+        console.error("Error with donors channel. Reconnecting in 5s...");
+        setTimeout(() => {
+          donorsChannel.subscribe();
+        }, 5000);
+      }
+    });
+    
+    await hospitalsChannel.subscribe((status) => {
+      console.log("Hospitals channel status:", status);
+      
+      if (status === 'CHANNEL_ERROR') {
+        console.error("Error with hospitals channel. Reconnecting in 5s...");
+        setTimeout(() => {
+          hospitalsChannel.subscribe();
+        }, 5000);
+      }
+    });
+    
     console.log("Realtime subscriptions established for all tables");
   } catch (error) {
     console.error("Error setting up realtime subscriptions:", error);
+    // Attempt to reconnect after a delay
+    setTimeout(setupRealtimeSubscription, 10000);
   }
 };
 
 // Call this function when the app initializes
 setupRealtimeSubscription();
+
+// Export a function to manually reconnect channels if needed
+export const reconnectRealtimeChannels = () => {
+  console.log("Manually reconnecting realtime channels...");
+  setupRealtimeSubscription();
+};
