@@ -33,7 +33,7 @@ const bloodGroups = ["All", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const FindDonors = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useContext(AuthContext);
-  const [searchLocation, setSearchLocation] = useState("");
+  const [searchCity, setSearchCity] = useState("");
   const [selectedBloodGroup, setSelectedBloodGroup] = useState("All");
 
   const {
@@ -52,15 +52,15 @@ const FindDonors = () => {
       );
     }
     
-    if (searchLocation.trim()) {
-      const searchTerm = searchLocation.toLowerCase().trim();
+    if (searchCity.trim()) {
+      const searchTerm = searchCity.toLowerCase().trim();
       result = result.filter((donor) =>
         donor.location.toLowerCase().includes(searchTerm)
       );
     }
     
     return result;
-  }, [donors, selectedBloodGroup, searchLocation]);
+  }, [donors, selectedBloodGroup, searchCity]);
 
   const handleRequestDonation = (donorId: string, donorName: string, bloodGroup: string) => {
     if (!isAuthenticated) {
@@ -90,15 +90,15 @@ const FindDonors = () => {
                 <h2 className="text-xl font-semibold mb-4">Search Donors</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="city">City</Label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input
-                        id="location"
-                        placeholder="Enter city, zip code"
+                        id="city"
+                        placeholder="Enter city name"
                         className="pl-10"
-                        value={searchLocation}
-                        onChange={(e) => setSearchLocation(e.target.value)}
+                        value={searchCity}
+                        onChange={(e) => setSearchCity(e.target.value)}
                       />
                     </div>
                   </div>
@@ -163,7 +163,7 @@ const FindDonors = () => {
                         <Droplet className="inline mr-1 h-4 w-4" /> Blood Group
                       </TableHead>
                       <TableHead>
-                        <MapPin className="inline mr-1 h-4 w-4" /> Location
+                        <MapPin className="inline mr-1 h-4 w-4" /> City
                       </TableHead>
                       <TableHead className="hidden md:table-cell">Last Donation</TableHead>
                       <TableHead>

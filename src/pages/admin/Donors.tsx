@@ -103,8 +103,9 @@ const Donors = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
+                        <TableHead>Age</TableHead>
                         <TableHead>Blood Group</TableHead>
-                        <TableHead>Location</TableHead>
+                        <TableHead>City</TableHead>
                         <TableHead>Phone</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Last Donation</TableHead>
@@ -121,6 +122,7 @@ const Donors = () => {
                         .map((donor) => (
                           <TableRow key={donor.id}>
                             <TableCell className="font-medium">{donor.name}</TableCell>
+                            <TableCell>{donor.age || "N/A"}</TableCell>
                             <TableCell>
                               <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                                 {donor.blood_group}
