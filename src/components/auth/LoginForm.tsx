@@ -1,7 +1,7 @@
 
 import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "@/App";
+import { AuthContext, UserRole } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,14 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { LogIn, User, ShieldCheck } from "lucide-react";
+import { LogIn, User, Hospital, ShieldCheck } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -24,6 +31,7 @@ const LoginForm = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    role: "user" as UserRole,
   });
   const [localError, setLocalError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,6 +55,10 @@ const LoginForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleRoleChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, role: value as UserRole }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
@@ -60,8 +72,7 @@ const LoginForm = () => {
     try {
       setIsSubmitting(true);
       
-      // Use 'user' as the default role for all regular users 
-      const success = await login(formData.email, formData.password, 'user');
+      const success = await login(formData.email, formData.password, formData.role);
       
       if (success) {
         toast.success("You have been logged in successfully");
@@ -104,6 +115,18 @@ const LoginForm = () => {
       );
     }
     return null;
+  };
+
+  // Get the appropriate icon for the currently selected role
+  const getRoleIcon = () => {
+    switch(formData.role) {
+      case 'admin':
+        return <ShieldCheck className="h-4 w-4 mr-2" />;
+      case 'hospital':
+        return <Hospital className="h-4 w-4 mr-2" />;
+      default:
+        return <User className="h-4 w-4 mr-2" />;
+    }
   };
 
   return (
@@ -149,6 +172,37 @@ const LoginForm = () => {
               onChange={handleInputChange}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="role">Login as</Label>
+            <Select
+              value={formData.role}
+              onValueChange={handleRoleChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select your role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">
+                  <div className="flex items-center">
+                    <User className="h-4 w-4 mr-2" />
+                    User
+                  </div>
+                </SelectItem>
+                <SelectItem value="hospital">
+                  <div className="flex items-center">
+                    <Hospital className="h-4 w-4 mr-2" />
+                    Hospital
+                  </div>
+                </SelectItem>
+                <SelectItem value="admin">
+                  <div className="flex items-center">
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Admin
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button 
             type="submit" 
             className="w-full btn-blood flex gap-2"
@@ -157,9 +211,9 @@ const LoginForm = () => {
             {(isLoading || isSubmitting) ? (
               <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
             ) : (
-              <LogIn className="h-4 w-4" />
+              getRoleIcon()
             )}
-            Sign In
+            Sign In as {formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}
           </Button>
         </form>
 
