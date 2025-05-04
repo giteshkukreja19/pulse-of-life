@@ -279,18 +279,7 @@ const App = () => {
         setIsAuthenticated(true);
         
         const userRole = data.user.user_metadata?.role;
-        
-        if (userRole !== role && userRole !== null) {
-          const errorMsg = `You're trying to log in as ${role}, but your account is registered as ${userRole}`;
-          setAuthError(errorMsg);
-          toast.error(errorMsg);
-          await supabase.auth.signOut();
-          setIsAuthenticated(false);
-          setUserRole(null);
-          return false;
-        }
-        
-        setUserRole(role);
+        setUserRole(userRole);
         return true;
       }
       
