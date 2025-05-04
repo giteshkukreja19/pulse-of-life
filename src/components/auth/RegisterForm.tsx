@@ -38,7 +38,7 @@ const RegisterForm = () => {
     phone: "",
     bloodGroup: "",
     age: "",
-    city: "", // Changed from zip to city
+    city: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,7 +59,7 @@ const RegisterForm = () => {
         email: userData.email,
         phone: userData.phone,
         blood_group: userData.bloodGroup,
-        location: userData.city, // Use city instead of zip
+        location: userData.city, 
       });
 
       if (donorError) {
@@ -97,13 +97,13 @@ const RegisterForm = () => {
         bloodGroup: formData.bloodGroup,
         age: formData.age,
         city: formData.city,
-        // All users are both donors and recipients by default
+        // All users can be both donors and recipients
         isDonor: true,
         isRecipient: true,
       };
       
-      // Everyone is 'both' by default
-      const userRole = "both";
+      // Everyone is 'user' by default now instead of 'both'
+      const userRole = "user";
       
       const success = await register(
         formData.email,

@@ -67,18 +67,18 @@ const Dashboard = () => {
   return (
     <MainLayout>
       <div className="container mx-auto py-8 px-4">
-        {userRole === "donor" && (
-          <DonorDashboard 
-            onActionSuccess={handleActionSuccess} 
-            userName={userName} 
-          />
-        )}
-        
-        {userRole === "recipient" && (
-          <RecipientDashboard 
-            onActionSuccess={handleActionSuccess} 
-            bloodRequests={bloodRequests}
-          />
+        {userRole === "user" && (
+          <>
+            <DonorDashboard 
+              onActionSuccess={handleActionSuccess} 
+              userName={userName} 
+            />
+            <div className="my-8 border-t border-gray-200"></div>
+            <RecipientDashboard 
+              onActionSuccess={handleActionSuccess} 
+              bloodRequests={bloodRequests}
+            />
+          </>
         )}
         
         {userRole === "admin" && (

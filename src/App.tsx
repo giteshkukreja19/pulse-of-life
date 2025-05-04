@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,7 +27,7 @@ import BloodRequests from "./pages/admin/BloodRequests";
 import Donors from "./pages/admin/Donors";
 import Hospitals from "./pages/admin/Hospitals";
 
-export type UserRole = "donor" | "recipient" | "admin" | "hospital" | "both" | null;
+export type UserRole = "user" | "admin" | "hospital" | null;
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -149,7 +150,14 @@ const App = () => {
                 try {
                   const { data: userData } = await supabase.auth.getUser();
                   if (userData?.user) {
-                    const role = userData.user.user_metadata.role as UserRole;
+                    // Convert old roles to new roles if necessary
+                    let role = userData.user.user_metadata.role as UserRole;
+                    
+                    // Convert donor or recipient or both to user
+                    if (role === 'donor' || role === 'recipient' || role === 'both') {
+                      role = 'user';
+                    }
+                    
                     setUserRole(role);
                   }
                 } catch (error) {
@@ -182,7 +190,14 @@ const App = () => {
           
           const { data: userData } = await supabase.auth.getUser();
           if (userData?.user) {
-            const role = userData.user.user_metadata.role as UserRole;
+            // Convert old roles to new roles if necessary
+            let role = userData.user.user_metadata.role as UserRole;
+            
+            // Convert donor or recipient or both to user
+            if (role === 'donor' || role === 'recipient' || role === 'both') {
+              role = 'user';
+            }
+            
             setUserRole(role);
           }
         } else {
@@ -278,7 +293,12 @@ const App = () => {
       if (data.user) {
         setIsAuthenticated(true);
         
-        const userRole = data.user.user_metadata?.role;
+        // Convert old roles to new role system
+        let userRole = data.user.user_metadata?.role;
+        if (userRole === 'donor' || userRole === 'recipient' || userRole === 'both') {
+          userRole = 'user';
+        }
+        
         setUserRole(userRole);
         return true;
       }

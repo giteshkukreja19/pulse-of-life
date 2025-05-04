@@ -60,8 +60,8 @@ const LoginForm = () => {
     try {
       setIsSubmitting(true);
       
-      // Use 'both' as the default role for all users
-      const success = await login(formData.email, formData.password, 'both');
+      // Use 'user' as the default role for all regular users 
+      const success = await login(formData.email, formData.password, 'user');
       
       if (success) {
         toast.success("You have been logged in successfully");
