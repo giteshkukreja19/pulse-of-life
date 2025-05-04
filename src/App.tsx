@@ -151,14 +151,14 @@ const App = () => {
                   const { data: userData } = await supabase.auth.getUser();
                   if (userData?.user) {
                     // Convert old roles to new roles if necessary
-                    let role = userData.user.user_metadata.role as UserRole;
+                    let role = userData.user.user_metadata.role;
                     
                     // Convert donor or recipient or both to user
                     if (role === 'donor' || role === 'recipient' || role === 'both') {
                       role = 'user';
                     }
                     
-                    setUserRole(role);
+                    setUserRole(role as UserRole);
                   }
                 } catch (error) {
                   console.error("Error getting user role:", error);
@@ -191,14 +191,14 @@ const App = () => {
           const { data: userData } = await supabase.auth.getUser();
           if (userData?.user) {
             // Convert old roles to new roles if necessary
-            let role = userData.user.user_metadata.role as UserRole;
+            let role = userData.user.user_metadata.role;
             
             // Convert donor or recipient or both to user
             if (role === 'donor' || role === 'recipient' || role === 'both') {
               role = 'user';
             }
             
-            setUserRole(role);
+            setUserRole(role as UserRole);
           }
         } else {
           setIsAuthenticated(false);
@@ -299,7 +299,7 @@ const App = () => {
           userRole = 'user';
         }
         
-        setUserRole(userRole);
+        setUserRole(userRole as UserRole);
         return true;
       }
       
