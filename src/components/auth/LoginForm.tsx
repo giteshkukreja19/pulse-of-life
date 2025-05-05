@@ -1,6 +1,7 @@
+
 import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "@/App";
+import { AuthContext, UserRole } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-type UserRole = 'user' | 'hospital' | 'admin';
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -62,21 +61,29 @@ const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLocalError(null);
     
+    // Validate form
     if (!formData.email || !formData.password) {
-      toast.error("Please fill in all required fields");
+      setLocalError("Please fill in all fields");
       return;
     }
     
     try {
-      const success = await login(formData.email, formData.password);
+      setIsSubmitting(true);
+      
+      const success = await login(formData.email, formData.password, formData.role);
       
       if (success) {
-        toast.success("Login successful!");
+        toast.success("You have been logged in successfully");
+        // Navigate to dashboard after login
         navigate("/dashboard");
       }
     } catch (error) {
       console.error("Login error:", error);
+      setLocalError("An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

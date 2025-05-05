@@ -31,17 +31,14 @@ import Help from "./pages/Help";
 import HospitalProfile from "./pages/HospitalProfile";
 
 // Define AuthContext
-export type UserRole = 'user' | 'admin' | 'hospital' | 'donor';
-
 export const AuthContext = createContext({
   isAuthenticated: false,
-  userId: null as string | null,
-  userRole: null as string | null,
-  authError: null as string | null,
-  isLoading: false,
-  login: async (email: string, password: string): Promise<boolean> => false,
-  logout: async (): Promise<boolean> => false,
-  register: async (email: string, password: string, role: string): Promise<boolean> => false,
+  userId: null,
+  userRole: null,
+  authError: null,
+  login: async (email: string, password: string) => {},
+  logout: () => {},
+  register: async (email: string, password: string, role: string) => {},
 });
 
 function App() {
@@ -49,16 +46,16 @@ function App() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const queryClient = new QueryClient();
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
+    const session = supabase.auth.getSession();
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.session) {
         setIsAuthenticated(true);
-        setUserId(session.user.id);
-        getUserRole(session.user.id);
+        setUserId(session.session.user.id);
+        getUserRole(session.session.user.id);
       } else {
         setIsAuthenticated(false);
         setUserId(null);
@@ -66,21 +63,13 @@ function App() {
       }
     });
 
-    // Check for existing session
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        setIsAuthenticated(true);
-        setUserId(data.session.user.id);
-        getUserRole(data.session.user.id);
+    if (session) {
+      setIsAuthenticated(true);
+      setUserId(session.data.session?.user.id || null);
+      if (session.data.session?.user.id) {
+        getUserRole(session.data.session?.user.id);
       }
-    };
-    
-    checkSession();
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    }
   }, []);
 
   const getUserRole = async (userId: string) => {
@@ -109,9 +98,8 @@ function App() {
     }
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string) => {
     try {
-      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -122,13 +110,11 @@ function App() {
         setIsAuthenticated(false);
         setUserId(null);
         setUserRole(null);
-        return false;
       } else {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
         getUserRole(data.user?.id || '');
-        return true;
       }
     } catch (error: any) {
       setAuthError(error.message);
@@ -136,15 +122,11 @@ function App() {
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
-      return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, role: string): Promise<boolean> => {
+  const register = async (email: string, password: string, role: string) => {
     try {
-      setIsLoading(true);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -160,13 +142,11 @@ function App() {
         setIsAuthenticated(false);
         setUserId(null);
         setUserRole(null);
-        return false;
       } else {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
         getUserRole(data.user?.id || '');
-        return true;
       }
     } catch (error: any) {
       setAuthError(error.message);
@@ -174,31 +154,23 @@ function App() {
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
-      return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const logout = async (): Promise<boolean> => {
+  const logout = async () => {
     try {
-      setIsLoading(true);
       await supabase.auth.signOut();
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
-      return true;
     } catch (error: any) {
       console.error("Logout error:", error);
-      return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={{ isAuthenticated, userId, userRole, authError, isLoading, login, logout, register }}>
+      <AuthContext.Provider value={{ isAuthenticated, userId, userRole, authError, login, logout, register }}>
         <Router>
           <Routes>
             <Route path="/" element={<Index />} />

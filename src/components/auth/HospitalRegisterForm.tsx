@@ -1,3 +1,4 @@
+
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "@/App";
@@ -55,10 +56,21 @@ const HospitalRegisterForm = () => {
     }
 
     try {
+      const metadata: any = {
+        name: formData.name,
+        licenseNumber: formData.licenseNumber,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        phone: formData.phone,
+        zip: formData.zip,
+      };
+
       const success = await register(
         formData.email,
         formData.password,
-        "hospital"
+        "hospital",
+        metadata
       );
 
       if (success) {
