@@ -1,7 +1,7 @@
 
 import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext, UserRole } from "@/App";
+import { AuthContext } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+type UserRole = 'user' | 'hospital' | 'admin';
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -72,7 +74,7 @@ const LoginForm = () => {
     try {
       setIsSubmitting(true);
       
-      const success = await login(formData.email, formData.password, formData.role);
+      const success = await login(formData.email, formData.password);
       
       if (success) {
         toast.success("You have been logged in successfully");

@@ -91,7 +91,7 @@ const RegisterForm = () => {
     }
     
     try {
-      const metadata: any = {
+      const metadata = {
         name: formData.name,
         phone: formData.phone,
         bloodGroup: formData.bloodGroup,
@@ -108,8 +108,7 @@ const RegisterForm = () => {
       const success = await register(
         formData.email,
         formData.password,
-        userRole,
-        metadata
+        userRole
       );
       
       if (success) {

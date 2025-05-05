@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, createContext } from "react";
 import {
   BrowserRouter as Router,
@@ -31,14 +32,17 @@ import Help from "./pages/Help";
 import HospitalProfile from "./pages/HospitalProfile";
 
 // Define AuthContext
+export type UserRole = 'user' | 'admin' | 'hospital';
+
 export const AuthContext = createContext({
   isAuthenticated: false,
-  userId: null,
-  userRole: null,
-  authError: null,
+  userId: null as string | null,
+  userRole: null as string | null,
+  authError: null as string | null,
+  isLoading: false,
   login: async (email: string, password: string) => {},
-  logout: () => {},
-  register: async (email: string, password: string, role: string) => {},
+  logout: async () => {},
+  register: async (email: string, password: string, role: string) => false as boolean,
 });
 
 function App() {
@@ -46,16 +50,16 @@ function App() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const queryClient = new QueryClient();
 
   useEffect(() => {
-    const session = supabase.auth.getSession();
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.session) {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sessionData) => {
+      if (sessionData) {
         setIsAuthenticated(true);
-        setUserId(session.session.user.id);
-        getUserRole(session.session.user.id);
+        setUserId(sessionData.user.id);
+        getUserRole(sessionData.user.id);
       } else {
         setIsAuthenticated(false);
         setUserId(null);
@@ -63,13 +67,21 @@ function App() {
       }
     });
 
-    if (session) {
-      setIsAuthenticated(true);
-      setUserId(session.data.session?.user.id || null);
-      if (session.data.session?.user.id) {
-        getUserRole(session.data.session?.user.id);
+    // Check for existing session
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setIsAuthenticated(true);
+        setUserId(data.session.user.id);
+        getUserRole(data.session.user.id);
       }
-    }
+    };
+    
+    checkSession();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const getUserRole = async (userId: string) => {
@@ -100,6 +112,7 @@ function App() {
 
   const login = async (email: string, password: string) => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -110,11 +123,13 @@ function App() {
         setIsAuthenticated(false);
         setUserId(null);
         setUserRole(null);
+        return false;
       } else {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
         getUserRole(data.user?.id || '');
+        return true;
       }
     } catch (error: any) {
       setAuthError(error.message);
@@ -122,11 +137,15 @@ function App() {
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const register = async (email: string, password: string, role: string) => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -142,11 +161,13 @@ function App() {
         setIsAuthenticated(false);
         setUserId(null);
         setUserRole(null);
+        return false;
       } else {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
         getUserRole(data.user?.id || '');
+        return true;
       }
     } catch (error: any) {
       setAuthError(error.message);
@@ -154,23 +175,31 @@ function App() {
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
+      setIsLoading(true);
       await supabase.auth.signOut();
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
+      return true;
     } catch (error: any) {
       console.error("Logout error:", error);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={{ isAuthenticated, userId, userRole, authError, login, logout, register }}>
+      <AuthContext.Provider value={{ isAuthenticated, userId, userRole, authError, isLoading, login, logout, register }}>
         <Router>
           <Routes>
             <Route path="/" element={<Index />} />

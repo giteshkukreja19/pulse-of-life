@@ -56,21 +56,10 @@ const HospitalRegisterForm = () => {
     }
 
     try {
-      const metadata: any = {
-        name: formData.name,
-        licenseNumber: formData.licenseNumber,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        phone: formData.phone,
-        zip: formData.zip,
-      };
-
       const success = await register(
         formData.email,
         formData.password,
-        "hospital",
-        metadata
+        "hospital"
       );
 
       if (success) {

@@ -72,6 +72,14 @@ export const useHospitalProfile = (userId: string | null) => {
   });
 };
 
+interface BloodInventoryItem {
+  id: string;
+  hospital_id: string;
+  blood_group: string;
+  units: number;
+  updated_at: string;
+}
+
 // Function to update hospital inventory
 export const updateHospitalInventory = async (hospitalId: string, bloodGroup: string, units: number, operation: 'add' | 'remove') => {
   try {
@@ -93,12 +101,12 @@ export const updateHospitalInventory = async (hospitalId: string, bloodGroup: st
     let newUnits = units;
     if (existingInventory) {
       newUnits = operation === 'add' 
-        ? existingInventory.units + units 
-        : existingInventory.units - units;
+        ? (existingInventory as BloodInventoryItem).units + units 
+        : (existingInventory as BloodInventoryItem).units - units;
       
       // Prevent negative inventory
       if (newUnits < 0) {
-        toast.error(`Cannot remove more units than available (${existingInventory.units})`);
+        toast.error(`Cannot remove more units than available (${(existingInventory as BloodInventoryItem).units})`);
         return false;
       }
     } else if (operation === 'remove') {
