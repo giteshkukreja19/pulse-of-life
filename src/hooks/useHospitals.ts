@@ -72,12 +72,13 @@ export const useHospitalProfile = (userId: string | null) => {
   });
 };
 
-interface BloodInventoryItem {
+// Define the type for blood inventory items
+export interface BloodInventoryItem {
   id: string;
   hospital_id: string;
   blood_group: string;
   units: number;
-  updated_at: string;
+  updated_at: string | null;
 }
 
 // Function to update hospital inventory

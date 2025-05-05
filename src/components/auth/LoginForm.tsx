@@ -1,4 +1,3 @@
-
 import { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "@/App";
@@ -63,29 +62,21 @@ const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(null);
     
-    // Validate form
     if (!formData.email || !formData.password) {
-      setLocalError("Please fill in all fields");
+      toast.error("Please fill in all required fields");
       return;
     }
     
     try {
-      setIsSubmitting(true);
-      
       const success = await login(formData.email, formData.password);
       
       if (success) {
-        toast.success("You have been logged in successfully");
-        // Navigate to dashboard after login
+        toast.success("Login successful!");
         navigate("/dashboard");
       }
     } catch (error) {
       console.error("Login error:", error);
-      setLocalError("An unexpected error occurred");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

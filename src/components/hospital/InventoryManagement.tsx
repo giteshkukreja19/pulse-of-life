@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,48 +13,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { updateHospitalInventory } from "@/hooks/useHospitals";
+import { toast } from "sonner";
+import { updateHospitalInventory, useHospitalInventory, BloodInventoryItem } from "@/hooks/useHospitals";
 
 interface InventoryManagementProps {
   hospitalId?: string;
 }
 
-interface InventoryItem {
-  id: string;
-  bloodGroup: string;
-  units: number;
-  lastUpdated: Date;
-}
-
 const InventoryManagement = ({ hospitalId }: InventoryManagementProps) => {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [newBloodGroup, setNewBloodGroup] = useState("A+");
   const [newUnits, setNewUnits] = useState(1);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<BloodInventoryItem | null>(null);
   const [removeUnits, setRemoveUnits] = useState(1);
   
-  // This would ideally come from a custom hook fetching data from Supabase
-  // For now we'll use a static inventory
-  const [inventory, setInventory] = useState<InventoryItem[]>([
-    { id: '1', bloodGroup: 'A+', units: 12, lastUpdated: new Date() },
-    { id: '2', bloodGroup: 'A-', units: 5, lastUpdated: new Date() },
-    { id: '3', bloodGroup: 'B+', units: 8, lastUpdated: new Date() },
-    { id: '4', bloodGroup: 'O-', units: 3, lastUpdated: new Date() },
-  ]);
+  // Fetch real inventory data from the database
+  const { data: inventoryData, isLoading, error, refetch } = useHospitalInventory(hospitalId || null);
   
   const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   
   const handleAddInventory = async () => {
     if (!hospitalId) {
-      toast({
-        title: "Error",
-        description: "Hospital ID is required to update inventory",
-        variant: "destructive"
-      });
+      toast.error("Hospital ID is required to update inventory");
       return;
     }
     
@@ -66,27 +48,7 @@ const InventoryManagement = ({ hospitalId }: InventoryManagementProps) => {
     );
     
     if (success) {
-      // Update local state for immediate UI feedback
-      const existingGroup = inventory.find(item => item.bloodGroup === newBloodGroup);
-      
-      if (existingGroup) {
-        setInventory(prev => prev.map(item => 
-          item.bloodGroup === newBloodGroup 
-            ? { ...item, units: item.units + newUnits, lastUpdated: new Date() } 
-            : item
-        ));
-      } else {
-        setInventory(prev => [
-          ...prev, 
-          { 
-            id: Date.now().toString(), 
-            bloodGroup: newBloodGroup, 
-            units: newUnits, 
-            lastUpdated: new Date() 
-          }
-        ]);
-      }
-      
+      refetch(); // Refresh data after successful update
       setIsAddDialogOpen(false);
       setNewUnits(1);
     }
@@ -94,58 +56,62 @@ const InventoryManagement = ({ hospitalId }: InventoryManagementProps) => {
   
   const handleRemoveInventory = async () => {
     if (!hospitalId || !selectedItem) {
-      toast({
-        title: "Error",
-        description: "Failed to remove inventory units",
-        variant: "destructive"
-      });
+      toast.error("Failed to remove inventory units");
       return;
     }
     
     if (removeUnits > selectedItem.units) {
-      toast({
-        title: "Error",
-        description: "Cannot remove more units than available",
-        variant: "destructive"
-      });
+      toast.error("Cannot remove more units than available");
       return;
     }
     
     const success = await updateHospitalInventory(
       hospitalId, 
-      selectedItem.bloodGroup, 
+      selectedItem.blood_group, 
       removeUnits, 
       'remove'
     );
     
     if (success) {
-      setInventory(prev => prev.map(item => 
-        item.id === selectedItem.id 
-          ? { 
-              ...item, 
-              units: item.units - removeUnits,
-              lastUpdated: new Date()
-            } 
-          : item
-      ).filter(item => item.units > 0)); // Remove if no units left
-      
+      refetch(); // Refresh data after successful update
       setIsRemoveDialogOpen(false);
       setRemoveUnits(1);
       setSelectedItem(null);
     }
   };
   
-  const openRemoveDialog = (item: InventoryItem) => {
+  const openRemoveDialog = (item: BloodInventoryItem) => {
     setSelectedItem(item);
     setRemoveUnits(1);
     setIsRemoveDialogOpen(true);
   };
   
-  const filteredInventory = inventory.filter(item => 
-    item.bloodGroup.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredInventory = inventoryData ? inventoryData.filter((item: BloodInventoryItem) => 
+    item.blood_group.toLowerCase().includes(searchTerm.toLowerCase())
+  ) : [];
   
-  const totalUnits = inventory.reduce((acc, item) => acc + item.units, 0);
+  const totalUnits = inventoryData ? inventoryData.reduce((acc: number, item: BloodInventoryItem) => acc + item.units, 0) : 0;
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          Loading inventory data...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p className="text-red-500">Error loading inventory data</p>
+          <Button onClick={() => refetch()} className="mt-4">Try Again</Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -213,7 +179,7 @@ const InventoryManagement = ({ hospitalId }: InventoryManagementProps) => {
             <p className="font-medium">Total: {totalUnits} units</p>
           </div>
           
-          {inventory.length === 0 ? (
+          {(!inventoryData || inventoryData.length === 0) ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
                 No inventory data available.
@@ -233,15 +199,15 @@ const InventoryManagement = ({ hospitalId }: InventoryManagementProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInventory.map((item) => (
+                {filteredInventory.map((item: BloodInventoryItem) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                        {item.bloodGroup}
+                        {item.blood_group}
                       </span>
                     </TableCell>
                     <TableCell className="font-semibold">{item.units}</TableCell>
-                    <TableCell>{item.lastUpdated.toLocaleString()}</TableCell>
+                    <TableCell>{new Date(item.updated_at || '').toLocaleString()}</TableCell>
                     <TableCell>
                       <Button 
                         variant="outline" 
@@ -272,7 +238,7 @@ const InventoryManagement = ({ hospitalId }: InventoryManagementProps) => {
           <div className="grid gap-4 py-4">
             <div className="space-y-1">
               <p className="text-sm font-medium">Blood Group</p>
-              <p className="font-semibold">{selectedItem?.bloodGroup}</p>
+              <p className="font-semibold">{selectedItem?.blood_group}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium">Available Units</p>

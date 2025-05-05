@@ -1,4 +1,3 @@
-
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "@/App";
@@ -91,42 +90,20 @@ const RegisterForm = () => {
     }
     
     try {
-      const metadata = {
-        name: formData.name,
-        phone: formData.phone,
-        bloodGroup: formData.bloodGroup,
-        age: formData.age,
-        city: formData.city,
-        // All users can be both donors and recipients
-        isDonor: true,
-        isRecipient: true,
-      };
-      
-      // Everyone is 'user' by default now instead of 'both'
-      const userRole = "user";
-      
       const success = await register(
         formData.email,
         formData.password,
-        userRole
+        "donor"
       );
-      
+
       if (success) {
-        // Get the user ID from the newly registered user
-        const { data: authData } = await supabase.auth.getUser();
-        if (authData?.user) {
-          console.log("User registered with ID:", authData.user.id);
-          
-          // Save user data to database tables
-          await saveUserToDatabase(authData.user.id, formData);
-        }
-        
-        toast.success("Registration successful! Please check your email for verification and then log in.");
+        toast.success(
+          "Registration successful! Please check your email for verification and then log in."
+        );
         navigate("/login");
       }
     } catch (error) {
       console.error("Registration error:", error);
-      toast.error("Registration failed. Please try again.");
     }
   };
 

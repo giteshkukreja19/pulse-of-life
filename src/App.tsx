@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, createContext } from "react";
 import {
   BrowserRouter as Router,
@@ -32,7 +31,7 @@ import Help from "./pages/Help";
 import HospitalProfile from "./pages/HospitalProfile";
 
 // Define AuthContext
-export type UserRole = 'user' | 'admin' | 'hospital';
+export type UserRole = 'user' | 'admin' | 'hospital' | 'donor';
 
 export const AuthContext = createContext({
   isAuthenticated: false,
@@ -40,9 +39,9 @@ export const AuthContext = createContext({
   userRole: null as string | null,
   authError: null as string | null,
   isLoading: false,
-  login: async (email: string, password: string) => {},
-  logout: async () => {},
-  register: async (email: string, password: string, role: string) => false as boolean,
+  login: async (email: string, password: string): Promise<boolean> => false,
+  logout: async (): Promise<boolean> => false,
+  register: async (email: string, password: string, role: string): Promise<boolean> => false,
 });
 
 function App() {
@@ -55,11 +54,11 @@ function App() {
 
   useEffect(() => {
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sessionData) => {
-      if (sessionData) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
         setIsAuthenticated(true);
-        setUserId(sessionData.user.id);
-        getUserRole(sessionData.user.id);
+        setUserId(session.user.id);
+        getUserRole(session.user.id);
       } else {
         setIsAuthenticated(false);
         setUserId(null);
@@ -110,7 +109,7 @@ function App() {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -143,7 +142,7 @@ function App() {
     }
   };
 
-  const register = async (email: string, password: string, role: string) => {
+  const register = async (email: string, password: string, role: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase.auth.signUp({
@@ -181,7 +180,7 @@ function App() {
     }
   };
 
-  const logout = async () => {
+  const logout = async (): Promise<boolean> => {
     try {
       setIsLoading(true);
       await supabase.auth.signOut();
