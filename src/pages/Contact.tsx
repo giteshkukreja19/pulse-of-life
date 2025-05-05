@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -63,8 +62,8 @@ const Contact = () => {
                     <div>
                       <h3 className="font-medium">Our Address</h3>
                       <p className="text-sm text-muted-foreground">
-                        123 Main Street, Medical Campus<br />
-                        Building B, New York, NY 10001
+                        201 Sannasi Boys Hostel Block A<br />
+                        SRMIST, Potheri 603203
                       </p>
                     </div>
                   </div>
@@ -74,7 +73,7 @@ const Contact = () => {
                     <div>
                       <h3 className="font-medium">Phone Number</h3>
                       <p className="text-sm text-muted-foreground">
-                        +1 (234) 567-8901
+                        8602872714, 8824340754
                       </p>
                     </div>
                   </div>
@@ -84,7 +83,7 @@ const Contact = () => {
                     <div>
                       <h3 className="font-medium">Email Address</h3>
                       <p className="text-sm text-muted-foreground">
-                        contact@plusoflife.org
+                        gk7145@srmist.edu.in
                       </p>
                     </div>
                   </div>

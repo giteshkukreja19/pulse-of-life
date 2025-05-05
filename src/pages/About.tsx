@@ -1,4 +1,3 @@
-
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Heart, Users, Target, ArrowRight } from "lucide-react";
@@ -111,7 +110,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* Team Section */}
+      {/* Team Section - Updated with only two founders */}
       <section className="py-16 px-4">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-12">
@@ -121,49 +120,34 @@ const About = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-              <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 overflow-hidden">
-                <img 
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80" 
-                  alt="Sarah Johnson" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <h3 className="text-xl font-bold">Sarah Johnson</h3>
-              <p className="text-blood font-medium">Founder & Medical Director</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Hematologist with 15 years of experience in blood banking and transfusion medicine.
-              </p>
-            </div>
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             <div className="bg-white p-6 rounded-lg shadow-sm text-center">
               <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 overflow-hidden">
                 <img 
                   src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80" 
-                  alt="David Chen" 
+                  alt="Hemang Jeswani" 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h3 className="text-xl font-bold">David Chen</h3>
-              <p className="text-blood font-medium">Chief Technology Officer</p>
+              <h3 className="text-xl font-bold">Hemang Jeswani</h3>
+              <p className="text-blood font-medium">Co-Founder & Engineering Student</p>
               <p className="text-sm text-muted-foreground mt-2">
-                Tech innovator focusing on healthcare solutions with a background in medical informatics.
+                Engineering student with a passion for healthcare technology and accessible blood donation solutions.
               </p>
             </div>
             
             <div className="bg-white p-6 rounded-lg shadow-sm text-center">
               <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 overflow-hidden">
                 <img 
-                  src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80" 
-                  alt="Michael Roberts" 
+                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80" 
+                  alt="Gitesh Kukreja" 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h3 className="text-xl font-bold">Maya Roberts</h3>
-              <p className="text-blood font-medium">Community Outreach Lead</p>
+              <h3 className="text-xl font-bold">Gitesh Kukreja</h3>
+              <p className="text-blood font-medium">Co-Founder & Engineering Student</p>
               <p className="text-sm text-muted-foreground mt-2">
-                Public health specialist with a passion for community engagement and health education.
+                Tech innovator focusing on healthcare solutions with a background in software development.
               </p>
             </div>
           </div>
