@@ -16,15 +16,35 @@ import { toast } from "sonner";
 import MainLayout from "@/components/layout/MainLayout";
 import { useHospitals } from "@/hooks/useHospitals";
 import HospitalUsersTable from "@/components/dashboard/HospitalUsersTable";
+import { supabase } from "@/integrations/supabase/client";
 
 const Hospitals = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: hospitals = [], isLoading, error } = useHospitals();
+  const { data: hospitals = [], isLoading, error, refetch } = useHospitals();
 
-  const handleToggleStatus = (id: string, currentStatus: string, name: string) => {
-    // In a real application, this would update the hospital status in the database
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    toast.success(`${name} status changed to ${newStatus}`);
+  const handleToggleStatus = async (id: string, currentStatus: string, name: string) => {
+    try {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      
+      // Update the hospital status in Supabase
+      const { error } = await supabase
+        .from('hospitals')
+        .update({ status: newStatus })
+        .eq('id', id);
+        
+      if (error) {
+        console.error("Error updating hospital status:", error);
+        toast.error(`Failed to update ${name} status: ${error.message}`);
+        return;
+      }
+      
+      // Success notification and refetch data
+      toast.success(`${name}'s status changed to ${newStatus}`);
+      refetch();
+    } catch (err) {
+      console.error("Exception when updating hospital status:", err);
+      toast.error(`An unexpected error occurred. Please try again.`);
+    }
   };
 
   return (

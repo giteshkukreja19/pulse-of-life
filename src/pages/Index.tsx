@@ -151,8 +151,8 @@ const Index = () => {
                 <div className="absolute -top-6 -left-6 w-12 h-12 bg-blood-light rounded-full opacity-70"></div>
                 <div className="absolute -bottom-8 -right-8 w-16 h-16 bg-blood-light rounded-full opacity-50"></div>
                 <img 
-                  src="/lovable-uploads/d83df2a0-586f-4f7e-a4f8-53277286c3c2.png" 
-                  alt="Blood Donation Word Cloud"
+                  src="/lovable-uploads/4c146118-dfae-4c22-a871-f0315f6fe5d0.png" 
+                  alt="Hand with Blood Drop"
                   className="w-full max-w-md rounded-lg shadow-2xl object-cover"
                 />
               </div>

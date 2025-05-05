@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, Plus, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,82 +28,49 @@ interface BloodInventoryItem {
 
 const BloodInventory = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+  // Fetch hospitals to link hospital_id to hospital_name
+  const { data: hospitals = [] } = useQuery({
+    queryKey: ["hospitals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("hospitals")
+        .select("*");
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   // Fetch blood inventory data
   const { data: inventory = [], isLoading, error, refetch } = useQuery({
     queryKey: ["blood-inventory"],
     queryFn: async () => {
       try {
-        // This is a placeholder - in a real application, you would fetch from your inventory table
-        // Mocked data for now
-        const mockInventory: BloodInventoryItem[] = [
-          {
-            id: "1",
-            blood_group: "A+",
-            units_available: 45,
+        // This would fetch from a blood_inventory table if it existed
+        // Since we don't have this table yet, using mock data
+        // In a real app, this would be replaced with actual database fetch
+        
+        const mockInventory: BloodInventoryItem[] = bloodGroups.flatMap(group => {
+          return hospitals.map(hospital => ({
+            id: `${group}-${hospital.id}`,
+            blood_group: group,
+            units_available: Math.floor(Math.random() * 60) + 1, // Random units between 1-60
             last_updated: new Date().toISOString(),
-            hospital_name: "City General Hospital"
-          },
-          {
-            id: "2",
-            blood_group: "O-",
-            units_available: 12,
-            last_updated: new Date().toISOString(),
-            hospital_name: "Memorial Medical Center"
-          },
-          {
-            id: "3",
-            blood_group: "B+",
-            units_available: 28,
-            last_updated: new Date().toISOString(),
-            hospital_name: "St. Joseph's Hospital"
-          },
-          {
-            id: "4",
-            blood_group: "AB+",
-            units_available: 7,
-            last_updated: new Date().toISOString(),
-            hospital_name: "University Medical Center"
-          },
-          {
-            id: "5",
-            blood_group: "A-",
-            units_available: 15,
-            last_updated: new Date().toISOString(),
-            hospital_name: "City General Hospital"
-          },
-          {
-            id: "6",
-            blood_group: "O+",
-            units_available: 52,
-            last_updated: new Date().toISOString(),
-            hospital_name: "Memorial Medical Center"
-          },
-          {
-            id: "7",
-            blood_group: "B-",
-            units_available: 9,
-            last_updated: new Date().toISOString(),
-            hospital_name: "St. Joseph's Hospital"
-          },
-          {
-            id: "8",
-            blood_group: "AB-",
-            units_available: 3,
-            last_updated: new Date().toISOString(),
-            hospital_name: "University Medical Center"
-          }
-        ];
+            hospital_id: hospital.id,
+            hospital_name: hospital.name
+          }));
+        }).filter(item => item.units_available > 0);
         
         return mockInventory;
       } catch (error) {
         console.error("Error fetching inventory:", error);
         throw error;
       }
-    }
+    },
+    enabled: hospitals.length > 0
   });
-
-  const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   
   // Calculate total units
   const totalUnits = inventory.reduce((acc, item) => acc + item.units_available, 0);
