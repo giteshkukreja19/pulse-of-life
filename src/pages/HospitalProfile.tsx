@@ -10,7 +10,7 @@ import { useHospitalProfile } from "@/hooks/useHospitals";
 
 const HospitalProfilePage = () => {
   const { userId, isAuthenticated } = useContext(AuthContext);
-  const { data: profile } = useHospitalProfile(userId);
+  const { data: profile, isLoading, error } = useHospitalProfile(userId);
   
   if (!isAuthenticated) {
     return (
@@ -21,6 +21,40 @@ const HospitalProfilePage = () => {
               <h2 className="text-xl font-semibold mb-2">Please Login</h2>
               <p className="text-muted-foreground">
                 You need to be logged in to view your hospital profile.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+  
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="py-12 text-center">
+              <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+              <p className="text-muted-foreground">
+                Fetching your hospital profile data.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+  
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="py-12 text-center">
+              <h2 className="text-xl font-semibold mb-2">Error</h2>
+              <p className="text-muted-foreground">
+                There was a problem loading your hospital profile.
               </p>
             </CardContent>
           </Card>

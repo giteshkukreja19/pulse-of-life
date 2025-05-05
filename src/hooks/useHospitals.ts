@@ -75,17 +75,92 @@ export const useHospitalProfile = (userId: string | null) => {
 // Function to update hospital inventory
 export const updateHospitalInventory = async (hospitalId: string, bloodGroup: string, units: number, operation: 'add' | 'remove') => {
   try {
-    // In a real implementation, you would first check if the inventory exists for this hospital and blood group
-    // Then update it or create a new one if it doesn't exist
+    // First check if blood inventory entry already exists for this hospital and blood group
+    const { data: existingInventory, error: fetchError } = await supabase
+      .from('blood_inventory')
+      .select('*')
+      .eq('hospital_id', hospitalId)
+      .eq('blood_group', bloodGroup)
+      .single();
+      
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error("Error checking inventory:", fetchError);
+      toast.error("Failed to check inventory status");
+      return false;
+    }
     
-    // This is a placeholder. In a production app, you would have a blood_inventory table
-    // For now, we'll simply show a success message
+    // Calculate new units based on operation
+    let newUnits = units;
+    if (existingInventory) {
+      newUnits = operation === 'add' 
+        ? existingInventory.units + units 
+        : existingInventory.units - units;
+      
+      // Prevent negative inventory
+      if (newUnits < 0) {
+        toast.error(`Cannot remove more units than available (${existingInventory.units})`);
+        return false;
+      }
+    } else if (operation === 'remove') {
+      toast.error("Cannot remove units from non-existent inventory");
+      return false;
+    }
+    
+    // Upsert the inventory
+    const { error: upsertError } = await supabase
+      .from('blood_inventory')
+      .upsert(
+        {
+          hospital_id: hospitalId,
+          blood_group: bloodGroup,
+          units: newUnits,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'hospital_id,blood_group' }
+      );
+      
+    if (upsertError) {
+      console.error("Error updating inventory:", upsertError);
+      toast.error("Failed to update inventory");
+      return false;
+    }
     
     toast.success(`Successfully ${operation === 'add' ? 'added' : 'removed'} ${units} units of ${bloodGroup}`);
     return true;
   } catch (error) {
-    console.error("Error updating inventory:", error);
+    console.error("Exception updating inventory:", error);
     toast.error("Failed to update inventory");
     return false;
   }
+};
+
+export const useHospitalInventory = (hospitalId: string | null) => {
+  return useQuery({
+    queryKey: ['hospital-inventory', hospitalId],
+    queryFn: async () => {
+      try {
+        if (!hospitalId) {
+          throw new Error("Hospital ID is required");
+        }
+        
+        const { data, error } = await supabase
+          .from('blood_inventory')
+          .select('*')
+          .eq('hospital_id', hospitalId);
+        
+        if (error) {
+          console.error("Error fetching hospital inventory:", error);
+          toast.error("Failed to fetch inventory data");
+          throw error;
+        }
+        
+        console.log("Hospital inventory:", data);
+        return data || [];
+      } catch (error) {
+        console.error("Exception when fetching hospital inventory:", error);
+        throw error;
+      }
+    },
+    enabled: !!hospitalId,
+  });
 };

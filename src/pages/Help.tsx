@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { HelpCircle, Support } from "lucide-react";
+import { HelpCircle, HeartHandshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,7 +46,7 @@ const Help = () => {
               <span>FAQ</span>
             </TabsTrigger>
             <TabsTrigger value="support" className="flex items-center gap-2">
-              <Support className="h-4 w-4" />
+              <HeartHandshake className="h-4 w-4" />
               <span>Contact Support</span>
             </TabsTrigger>
           </TabsList>
