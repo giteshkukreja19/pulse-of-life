@@ -8,11 +8,11 @@ export interface Donor {
   user_id: string;
   name?: string;
   email?: string;
-  blood_type?: string;
-  city?: string;
+  blood_group?: string;
+  location?: string;
   phone?: string;
   is_available?: boolean;
-  last_donation_date?: string;
+  last_donation?: string;
   created_at: string;
 }
 
@@ -29,20 +29,7 @@ export const useDonors = () => {
         
         if (donorsError) {
           console.error("Error fetching from donors table:", donorsError);
-          
-          // Fallback to the profiles table for donor data
-          const { data: profilesData, error: profilesError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("role", "donor")
-            .order("created_at", { ascending: false });
-            
-          if (profilesError) {
-            console.error("Error fetching donors from profiles:", profilesError);
-            throw profilesError;
-          }
-          
-          return profilesData || [];
+          return [];
         }
         
         // Handle case where data is null
@@ -73,24 +60,9 @@ export const useDonors = () => {
         console.log(`Donors realtime subscription status (${channelId}):`, status);
       });
 
-    // Also listen for changes on the profiles table
-    const profilesChannel = supabase
-      .channel(`profiles-realtime-${Math.random().toString(36).substring(2, 8)}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "profiles" },
-        (payload) => {
-          console.log("Profiles realtime update received:", payload);
-          // Force refetch on any change
-          query.refetch();
-        }
-      )
-      .subscribe();
-
     return () => {
       console.log(`Unsubscribing from donors realtime updates (${channelId})`);
       supabase.removeChannel(channel);
-      supabase.removeChannel(profilesChannel);
     };
   }, [query]);
 
