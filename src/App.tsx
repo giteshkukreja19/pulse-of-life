@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, createContext } from "react";
 import {
   BrowserRouter as Router,
@@ -30,6 +31,7 @@ import NotFound from "./pages/NotFound";
 import Help from "./pages/Help";
 import HospitalProfile from "./pages/HospitalProfile";
 import HospitalDonors from "./pages/hospital/HospitalDonors";
+import ForgotPassword from "./pages/ForgotPassword";
 
 // Define AuthContext
 export const AuthContext = createContext({
@@ -221,8 +223,10 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/register-hospital" element={<RegisterHospital />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/help" element={<Help />} />
             <Route path="/hospital-profile" element={<HospitalProfile />} />
+            <Route path="/find-donors" element={<FindDonors />} />
 
             {/* Protected Routes */}
             <Route
@@ -236,10 +240,6 @@ function App() {
               element={
                 isAuthenticated ? <RequestBlood /> : <Navigate to="/login" />
               }
-            />
-            <Route
-              path="/find-donors"
-              element={<FindDonors />}
             />
             <Route
               path="/profile"

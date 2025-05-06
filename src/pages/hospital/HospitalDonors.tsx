@@ -1,13 +1,19 @@
 
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuthContext } from "@/App";
 import HospitalUsersTable from "@/components/dashboard/HospitalUsersTable";
+import { useDonors } from "@/hooks/useDonors";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 const HospitalDonors = () => {
   const { isAuthenticated, userRole } = useContext(AuthContext);
+  const { data: donors, isLoading, error } = useDonors();
+  const [searchTerm, setSearchTerm] = useState("");
 
   if (!isAuthenticated || userRole !== 'hospital') {
     return (
@@ -26,6 +32,13 @@ const HospitalDonors = () => {
     );
   }
 
+  // Filter donors based on search term
+  const filteredDonors = donors?.filter(donor => 
+    donor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    donor.blood_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    donor.city?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-8">
@@ -34,6 +47,19 @@ const HospitalDonors = () => {
           <p className="text-muted-foreground">
             View and manage blood donors in your area
           </p>
+        </div>
+        
+        <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search donors..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button className="bg-blood hover:bg-blood/90">Request Blood</Button>
         </div>
         
         <Tabs defaultValue="all" className="space-y-6">
@@ -52,7 +78,15 @@ const HospitalDonors = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <HospitalUsersTable roleFilter="donor" />
+                {isLoading ? (
+                  <div className="text-center py-8">Loading donors...</div>
+                ) : error ? (
+                  <div className="text-center py-8 text-red-500">
+                    Error loading donors: {error.message}
+                  </div>
+                ) : (
+                  <HospitalUsersTable roleFilter="donor" customData={filteredDonors} />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -66,9 +100,13 @@ const HospitalDonors = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Feature coming soon</p>
-                </div>
+                {isLoading ? (
+                  <div className="text-center py-8">Loading donors...</div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Feature coming soon</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -82,9 +120,13 @@ const HospitalDonors = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Feature coming soon</p>
-                </div>
+                {isLoading ? (
+                  <div className="text-center py-8">Loading donors...</div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Feature coming soon</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

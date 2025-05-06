@@ -6,19 +6,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { toast } from "sonner";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [role, setRole] = useState("donor");
+  const [showPassword, setShowPassword] = useState(false);
   const { login, authError, isLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await login(email, password, role);
-    navigate("/dashboard");
+    
+    if (!email || !password) {
+      toast.error("Please enter both email and password");
+      return;
+    }
+    
+    try {
+      await login(email, password, role);
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Login error:", error);
+    }
+  };
+
+  const handleForgotPassword = () => {
+    navigate("/forgot-password");
   };
 
   const renderError = () => {
@@ -32,45 +49,62 @@ const LoginForm = () => {
 
   return (
     <div className="max-w-md w-full mx-auto rounded-lg bg-white p-8 shadow-md">
-      <h2 className="text-2xl font-semibold text-center mb-6">Login</h2>
+      <h2 className="text-2xl font-semibold text-center mb-6">Login to Your Account</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
-            Email
-          </label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-gray-700 font-medium">
+            Email Address
+          </Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="pl-10"
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-gray-700 font-medium">
             Password
-          </label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
+          </Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="pl-10 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </div>
         
         <div className="space-y-3">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
+          <Label className="text-gray-700 font-medium block mb-2">
             Login as
-          </label>
+          </Label>
           <RadioGroup 
             value={role} 
             onValueChange={setRole} 
-            className="flex flex-col space-y-2"
+            className="flex space-x-4"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="donor" id="donor" />
@@ -97,15 +131,16 @@ const LoginForm = () => {
             />
             <span className="text-sm">Remember me</span>
           </label>
-          <a
-            href="#"
+          <button
+            type="button"
+            onClick={handleForgotPassword}
             className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
           >
             Forgot Password?
-          </a>
+          </button>
         </div>
         {renderError()}
-        <Button type="submit" className="w-full btn-blood" disabled={isLoading}>
+        <Button type="submit" className="w-full bg-blood hover:bg-blood/90" disabled={isLoading}>
           {isLoading ? "Logging in..." : "Login"}
         </Button>
       </form>
