@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, createContext } from "react";
 import {
   BrowserRouter as Router,
@@ -37,7 +38,7 @@ export const AuthContext = createContext({
   userRole: null as string | null,
   authError: null as string | null,
   isLoading: false,
-  login: async (email: string, password: string): Promise<void> => {},
+  login: async (email: string, password: string, role?: string): Promise<void> => {},
   logout: async (): Promise<void> => {},
   register: async (email: string, password: string, role: string): Promise<void> => {},
 });
@@ -85,16 +86,26 @@ function App() {
 
   const getUserRole = async (userId: string) => {
     try {
-      const { data, error } = await supabase.from("hospitals").select("*").eq("user_id", userId).single();
+      // First check if there's a role in the metadata
+      const { data: userData } = await supabase.auth.getUser();
+      const metadataRole = userData?.user?.user_metadata?.role;
+      
+      if (metadataRole) {
+        setUserRole(metadataRole);
+        return;
+      }
+      
+      // If no role in metadata, check if user is a hospital
+      const { data: hospitalData } = await supabase.from("hospitals").select("*").eq("user_id", userId).single();
   
-      if (data) {
+      if (hospitalData) {
         setUserRole("hospital");
       } else {
         // If no hospital found, check if the user is an admin
         const { data: adminData, error: adminError } = await supabase.rpc('is_admin', { user_id: userId });
         if (adminError) {
           console.error("Error checking admin role:", adminError);
-          setUserRole(null);
+          setUserRole("donor");
           return;
         }
         if (adminData === true) {
@@ -105,11 +116,11 @@ function App() {
       }
     } catch (error) {
       console.error("Error fetching user role:", error);
-      setUserRole(null);
+      setUserRole("donor"); // Default to donor role
     }
   };
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string, role?: string): Promise<void> => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -126,7 +137,18 @@ function App() {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
-        getUserRole(data.user?.id || '');
+        
+        // Set role if provided during login
+        if (role) {
+          setUserRole(role);
+          
+          // Update user metadata with role
+          await supabase.auth.updateUser({
+            data: { role }
+          });
+        } else {
+          getUserRole(data.user?.id || '');
+        }
       }
     } catch (error: any) {
       setAuthError(error.message);
@@ -161,7 +183,7 @@ function App() {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
-        getUserRole(data.user?.id || '');
+        setUserRole(role);
       }
     } catch (error: any) {
       setAuthError(error.message);

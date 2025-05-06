@@ -1,19 +1,23 @@
+
 import { useContext, useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [role, setRole] = useState("donor");
   const { login, authError, isLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await login(email, password);
+    await login(email, password, role);
     navigate("/dashboard");
   };
 
@@ -24,12 +28,6 @@ const LoginForm = () => {
       );
     }
     return null;
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    await login(email, password);
-    navigate("/dashboard");
   };
 
   return (
@@ -64,6 +62,31 @@ const LoginForm = () => {
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
+        
+        <div className="space-y-3">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
+            Login as
+          </label>
+          <RadioGroup 
+            value={role} 
+            onValueChange={setRole} 
+            className="flex flex-col space-y-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="donor" id="donor" />
+              <Label htmlFor="donor">User / Donor</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="admin" id="admin" />
+              <Label htmlFor="admin">Admin</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="hospital" id="hospital" />
+              <Label htmlFor="hospital">Hospital</Label>
+            </div>
+          </RadioGroup>
+        </div>
+        
         <div className="flex items-center justify-between">
           <label className="flex items-center text-sm text-gray-700">
             <input
