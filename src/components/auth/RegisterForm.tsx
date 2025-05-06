@@ -1,289 +1,106 @@
-
-import { useState, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useContext, useState, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthContext } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { UserPlus, Heart } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-
-const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 const RegisterForm = () => {
-  const navigate = useNavigate();
-  const { register, isLoading } = useContext(AuthContext);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [validationError, setValidationError] = useState("");
   
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phone: "",
-    bloodGroup: "",
-    age: "",
-    city: "",
-  });
+  const { register, authError, isLoading } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name: string) => (value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const saveUserToDatabase = async (userId: string, userData: any) => {
-    try {
-      // Save to donors table for all users - everyone is both donor and recipient
-      const { error: donorError } = await supabase.from("donors").insert({
-        user_id: userId,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone,
-        blood_group: userData.bloodGroup,
-        location: userData.city, 
-      });
-
-      if (donorError) {
-        console.error("Error saving user data:", donorError);
-        toast.error("Error saving user profile. Please try again.");
-        return false;
-      } else {
-        console.log("User profile saved successfully");
-        return true;
-      }
-    } catch (error) {
-      console.error("Error saving user data:", error);
-      toast.error("Error saving user profile. Registration may be incomplete.");
+  const validateForm = () => {
+    if (!email) {
+      setValidationError("Please enter your email.");
       return false;
     }
+    if (!password) {
+      setValidationError("Please enter your password.");
+      return false;
+    }
+    if (password.length < 6) {
+      setValidationError("Password must be at least 6 characters.");
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setValidationError("Passwords do not match.");
+      return false;
+    }
+    setValidationError("");
+    return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword || !formData.bloodGroup) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
+    if (!validateForm()) return;
     
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-    
-    try {
-      const metadata: any = {
-        name: formData.name,
-        phone: formData.phone,
-        bloodGroup: formData.bloodGroup,
-        age: formData.age,
-        city: formData.city,
-        // All users can be both donors and recipients
-        isDonor: true,
-        isRecipient: true,
-      };
-      
-      // Everyone is 'user' by default now instead of 'both'
-      const userRole = "user";
-      
-      const success = await register(
-        formData.email,
-        formData.password,
-        userRole,
-        metadata
-      );
-      
-      if (success) {
-        // Get the user ID from the newly registered user
-        const { data: authData } = await supabase.auth.getUser();
-        if (authData?.user) {
-          console.log("User registered with ID:", authData.user.id);
-          
-          // Save user data to database tables
-          await saveUserToDatabase(authData.user.id, formData);
-        }
-        
-        toast.success("Registration successful! Please check your email for verification and then log in.");
-        navigate("/login");
-      }
-    } catch (error) {
-      console.error("Registration error:", error);
-      toast.error("Registration failed. Please try again.");
-    }
+    await register(email, password, "donor");
+    navigate("/dashboard");
   };
 
   return (
-    <Card className="w-[350px] md:w-[450px] card-gradient shadow-lg">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
-        <CardDescription className="text-center">
-          Join Pulse of Life and help save lives
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="John Doe"
-                required
-                value={formData.name}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="age">Age</Label>
-              <Input
-                id="age"
-                name="age"
-                type="number"
-                placeholder="21"
-                min="18"
-                max="65"
-                required
-                value={formData.age}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="name@example.com"
-              required
-              value={formData.email}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                required
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                name="phone"
-                placeholder="+1 (234) 567-8901"
-                required
-                value={formData.phone}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bloodGroup">Blood Group</Label>
-              <Select 
-                onValueChange={handleSelectChange("bloodGroup")}
-                value={formData.bloodGroup}
-              >
-                <SelectTrigger id="bloodGroup">
-                  <SelectValue placeholder="Select Blood Group" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bloodGroups.map((group) => (
-                    <SelectItem key={group} value={group}>
-                      {group}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="city">City</Label>
-            <Input
-              id="city"
-              name="city"
-              placeholder="Mumbai"
-              required
-              value={formData.city}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full btn-blood flex gap-2"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
-            ) : (
-              <UserPlus className="h-4 w-4" />
-            )}
-            Create Account
-          </Button>
-        </form>
-      </CardContent>
-      
-      <CardFooter className="flex flex-col space-y-4">
-        <div className="text-sm text-center">
-          Already have an account?{" "}
-          <Link to="/login" className="text-blood hover:underline font-medium">
-            Sign in
-          </Link>
+    <div className="max-w-md w-full mx-auto rounded-lg bg-white p-8 shadow-md">
+      <h2 className="text-2xl font-semibold mb-6">Register</h2>
+      {authError && (
+        <div className="text-red-500 mb-4">{authError}</div>
+      )}
+      {validationError && (
+        <div className="text-red-500 mb-4">{validationError}</div>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
+            Email
+          </label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          />
         </div>
-        <div className="text-sm text-center">
-          Register a hospital?{" "}
-          <Link to="/register-hospital" className="text-blood hover:underline font-medium">
-            Register Hospital
-          </Link>
+        <div>
+          <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
+            Password
+          </label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          />
         </div>
-      </CardFooter>
-    </Card>
+        <div>
+          <label htmlFor="confirmPassword" className="block text-gray-700 text-sm font-bold mb-2">
+            Confirm Password
+          </label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          />
+        </div>
+        <Button type="submit" className="w-full btn-blood" disabled={isLoading}>
+          {isLoading ? "Registering..." : "Register"}
+        </Button>
+      </form>
+    </div>
   );
 };
 

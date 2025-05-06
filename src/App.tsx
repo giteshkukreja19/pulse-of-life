@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, createContext } from "react";
 import {
   BrowserRouter as Router,
@@ -34,12 +33,13 @@ import HospitalProfile from "./pages/HospitalProfile";
 // Define AuthContext
 export const AuthContext = createContext({
   isAuthenticated: false,
-  userId: null,
-  userRole: null,
-  authError: null,
-  login: async (email: string, password: string) => {},
-  logout: () => {},
-  register: async (email: string, password: string, role: string) => {},
+  userId: null as string | null,
+  userRole: null as string | null,
+  authError: null as string | null,
+  isLoading: false,
+  login: async (email: string, password: string): Promise<void> => {},
+  logout: async (): Promise<void> => {},
+  register: async (email: string, password: string, role: string): Promise<void> => {},
 });
 
 function App() {
@@ -47,6 +47,7 @@ function App() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const queryClient = new QueryClient();
 
   useEffect(() => {
@@ -108,7 +109,8 @@ function App() {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<void> => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -120,13 +122,11 @@ function App() {
         setIsAuthenticated(false);
         setUserId(null);
         setUserRole(null);
-        return false;
       } else {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
         getUserRole(data.user?.id || '');
-        return true;
       }
     } catch (error: any) {
       setAuthError(error.message);
@@ -134,11 +134,13 @@ function App() {
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
-      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const register = async (email: string, password: string, role: string) => {
+  const register = async (email: string, password: string, role: string): Promise<void> => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -155,13 +157,11 @@ function App() {
         setIsAuthenticated(false);
         setUserId(null);
         setUserRole(null);
-        return false;
       } else {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
         getUserRole(data.user?.id || '');
-        return true;
       }
     } catch (error: any) {
       setAuthError(error.message);
@@ -169,11 +169,13 @@ function App() {
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
-      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
+    setIsLoading(true);
     try {
       await supabase.auth.signOut();
       setIsAuthenticated(false);
@@ -181,12 +183,14 @@ function App() {
       setUserRole(null);
     } catch (error: any) {
       console.error("Logout error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={{ isAuthenticated, userId, userRole, authError, login, logout, register }}>
+      <AuthContext.Provider value={{ isAuthenticated, userId, userRole, authError, isLoading, login, logout, register }}>
         <Router>
           <Routes>
             <Route path="/" element={<Index />} />
