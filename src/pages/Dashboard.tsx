@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/App";
 import { supabase } from "@/integrations/supabase/client";
 import { useBloodRequestsRealtime } from "@/hooks/useBloodRequestsRealtime";
-import MatchingRequestsPanel from "@/components/dashboard/MatchingRequestsPanel";
 import { toast } from "sonner";
 
 const Dashboard = () => {
@@ -35,7 +34,7 @@ const Dashboard = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           // Get name from user metadata or use email as fallback
-          const userDisplayName = user.user_metadata?.name || user.email?.split('@')[0] || "";
+          const userDisplayName = user.user_metadata?.name || user.email || "";
           setUserName(userDisplayName);
           console.log("Dashboard - Got user info:", { userDisplayName });
         }
@@ -68,7 +67,7 @@ const Dashboard = () => {
   return (
     <MainLayout>
       <div className="container mx-auto py-8 px-4">
-        {userRole === "donor" && (
+        {userRole === "user" && (
           <>
             <DonorDashboard 
               onActionSuccess={handleActionSuccess} 
@@ -79,8 +78,6 @@ const Dashboard = () => {
               onActionSuccess={handleActionSuccess} 
               bloodRequests={bloodRequests}
             />
-            <div className="my-8 border-t border-gray-200"></div>
-            <MatchingRequestsPanel />
           </>
         )}
         

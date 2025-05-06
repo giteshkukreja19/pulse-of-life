@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useContext } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -46,81 +48,71 @@ const Profile = () => {
     let channel: any;
     const fetchProfile = async () => {
       setLoading(true);
-      
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        
-        if (!user) {
-          setLoading(false);
-          setProfileData(null);
-          return;
-        }
-
-        // Try to fetch existing donor profile
-        const { data, error } = await supabase
-          .from("donors")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (error && error.code !== "PGRST116") {
-          console.error("Error fetching profile:", error);
-          toast.error("Error loading your profile");
-          setLoading(false);
-          return;
-        }
-
-        if (data) {
-          setProfileData(data);
-          setIsRegistered(true);
-        } else {
-          // Create a new profile object with default values
-          setProfileData({
-            user_id: user.id,
-            name: "",
-            email: user.email,
-            phone: "",
-            blood_group: "",
-            location: "",
-            age: "",
-            isAvailable: true,
-          });
-          setIsRegistered(false);
-        }
-        
-      } catch (error) {
-        console.error("Error in fetchProfile:", error);
-        toast.error("Failed to load profile data");
-      } finally {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
         setLoading(false);
+        setProfileData(null);
+        return;
       }
+
+      // Try to fetch existing donor profile
+      const { data, error } = await supabase
+        .from("donors")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error fetching profile:", error);
+        toast.error("Error loading your profile");
+        setLoading(false);
+        return;
+      }
+
+      if (data) {
+        setProfileData(data);
+        setIsRegistered(true);
+      } else {
+        // Create a new profile object with default values
+        setProfileData({
+          user_id: user.id,
+          name: "",
+          email: user.email,
+          phone: "",
+          blood_group: "",
+          location: "",
+          age: "",
+          isAvailable: true,
+        });
+        setIsRegistered(false);
+      }
+      
+      setLoading(false);
 
       // Subscribe to real-time updates for this profile
-      if (userId) {
-        channel = supabase
-          .channel("public:donors_profile")
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "donors", filter: `user_id=eq.${userId}` },
-            (payload) => {
-              // Fetch updated user data
-              supabase
-                .from("donors")
-                .select("*")
-                .eq("user_id", userId)
-                .maybeSingle()
-                .then(({ data }) => {
-                  if (data) {
-                    setProfileData(data);
-                    setIsRegistered(true);
-                  }
-                });
-            }
-          )
-          .subscribe();
-      }
+      channel = supabase
+        .channel("public:donors_profile")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "donors", filter: `user_id=eq.${user.id}` },
+          (payload) => {
+            // Fetch updated user data
+            supabase
+              .from("donors")
+              .select("*")
+              .eq("user_id", user.id)
+              .maybeSingle()
+              .then(({ data }) => {
+                if (data) {
+                  setProfileData(data);
+                  setIsRegistered(true);
+                }
+              });
+          }
+        )
+        .subscribe();
     };
     
     if (isAuthenticated) {
@@ -130,7 +122,7 @@ const Profile = () => {
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [isAuthenticated, userId]);
+  }, [isAuthenticated]);
 
   // Save profile (updates database)
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,40 +136,33 @@ const Profile = () => {
         return;
       }
       
-      // Fix for missing values
-      const dataToSave = {
-        user_id: profileData.user_id,
-        name: profileData.name || '',
-        email: profileData.email || '',
-        phone: profileData.phone || '',
-        blood_group: profileData.blood_group || '',
-        location: profileData.location || '',
-        age: profileData.age || null,
-        isAvailable: profileData.isAvailable !== undefined ? profileData.isAvailable : true,
-      };
-      
       // If the profile is not registered yet (new user), create a new record
       if (!isRegistered) {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("donors")
-          .insert(dataToSave)
-          .select();
+          .insert({
+            user_id: profileData.user_id,
+            name: profileData.name,
+            email: profileData.email,
+            phone: profileData.phone,
+            blood_group: profileData.blood_group,
+            location: profileData.location,
+            age: profileData.age,
+            isAvailable: profileData.isAvailable,
+          });
 
         if (error) {
           console.error("Error creating profile:", error);
-          toast.error("Failed to create profile: " + error.message);
+          toast.error("Failed to create profile");
           setSaving(false);
           return;
         }
 
-        if (data && data.length > 0) {
-          setProfileData(data[0]);
-          setIsRegistered(true);
-          toast.success("Profile created successfully!");
-        }
+        toast.success("Profile created successfully!");
+        setIsRegistered(true);
       } else {
         // Update existing profile
-        const { id, created_at, ...updateData } = profileData;
+        const { id, user_id, created_at, ...updateData } = profileData;
         
         const { error } = await supabase
           .from("donors")
@@ -186,7 +171,7 @@ const Profile = () => {
           
         if (error) {
           console.error("Error updating profile:", error);
-          toast.error("Failed to update profile: " + error.message);
+          toast.error("Failed to update profile");
           setSaving(false);
           return;
         }
@@ -239,7 +224,7 @@ const Profile = () => {
 
   // Navigate to request blood page
   const handleRequestBlood = () => {
-    window.location.href = "/request";
+    window.location.href = "/request-blood";
   };
   
   // Field change handler
@@ -311,7 +296,7 @@ const Profile = () => {
                   <Input
                     id="name"
                     name="name"
-                    value={profileData?.name || ""}
+                    value={profileData.name || ""}
                     onChange={handleChange}
                     required
                   />
@@ -322,7 +307,7 @@ const Profile = () => {
                     id="email"
                     name="email"
                     type="email"
-                    value={profileData?.email || ""}
+                    value={profileData.email || ""}
                     readOnly
                   />
                 </div>

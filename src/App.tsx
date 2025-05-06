@@ -1,335 +1,455 @@
 
-import React, { useState, useEffect, createContext } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { supabase } from "./integrations/supabase/client";
-import { Toaster } from "sonner";
-
-// Import pages
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState, createContext, useContext, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import About from "./pages/About";
-import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import RegisterHospital from "./pages/RegisterHospital";
 import Dashboard from "./pages/Dashboard";
 import RequestBlood from "./pages/RequestBlood";
 import FindDonors from "./pages/FindDonors";
 import Profile from "./pages/Profile";
-import Hospitals from "./pages/admin/Hospitals";
-import Donors from "./pages/admin/Donors";
-import BloodRequests from "./pages/admin/BloodRequests";
+import Contact from "./pages/Contact";
+import NotFound from "./pages/NotFound";
+import RegisterHospital from "./pages/RegisterHospital";
+import { toast } from "sonner";
+
+// Admin pages
 import BloodInventory from "./pages/admin/BloodInventory";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
-import NotFound from "./pages/NotFound";
-import Help from "./pages/Help";
-import HospitalProfile from "./pages/HospitalProfile";
-import HospitalDonors from "./pages/hospital/HospitalDonors";
-import ForgotPassword from "./pages/ForgotPassword";
+import BloodRequests from "./pages/admin/BloodRequests";
+import Donors from "./pages/admin/Donors";
+import Hospitals from "./pages/admin/Hospitals";
 
-// Define AuthContext
-export const AuthContext = createContext({
+export type UserRole = "user" | "admin" | "hospital" | null;
+
+interface AuthContextType {
+  isAuthenticated: boolean;
+  userRole: UserRole;
+  authError: string | null;
+  isLoading: boolean;
+  userId: string | null;
+  login: (email: string, password: string, role: UserRole) => Promise<boolean>;
+  register: (email: string, password: string, role: UserRole, metadata: any) => Promise<boolean>;
+  logout: () => Promise<void>;
+}
+
+export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
-  userId: null as string | null,
-  userRole: null as string | null,
-  authError: null as string | null,
+  userRole: null,
+  authError: null,
   isLoading: false,
-  login: async (email: string, password: string, role?: string): Promise<void> => {},
-  logout: async (): Promise<void> => {},
-  register: async (email: string, password: string, role: string): Promise<void> => {},
+  userId: null,
+  login: async () => false,
+  register: async () => false,
+  logout: async () => {},
 });
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const queryClient = new QueryClient();
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useContext(AuthContext);
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+    </div>;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
 
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading, userRole } = useContext(AuthContext);
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+    </div>;
+  }
+  
+  if (!isAuthenticated || userRole !== "admin") {
+    toast.error("You do not have permission to access this page");
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const HospitalRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading, userRole } = useContext(AuthContext);
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+    </div>;
+  }
+  
+  if (!isAuthenticated || (userRole !== "hospital" && userRole !== "admin")) {
+    toast.error("You do not have permission to access this page");
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const queryClient = new QueryClient();
+
+const testSupabaseConnection = async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error("Supabase connection test failed:", error);
+      toast.error("Supabase connection test failed. Check your configuration.");
+      return false;
+    }
+    
+    console.log("Supabase connection successful!");
+    return true;
+  } catch (error) {
+    console.error("Unexpected error in Supabase connection test:", error);
+    toast.error("Unexpected error in Supabase connection test.");
+    return false;
+  }
+};
+
+const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  
   useEffect(() => {
-    // Fix for Session issue - using async/await pattern
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data && data.session) {
-        setIsAuthenticated(true);
-        setUserId(data.session.user.id);
-        getUserRole(data.session.user.id);
+    testSupabaseConnection();
+  }, []);
+  
+  useEffect(() => {
+    const setupAuth = async () => {
+      setIsLoading(true);
+      
+      try {
+        // First set up the auth listener to prevent missing auth events
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (event === "SIGNED_IN" && session) {
+              setIsAuthenticated(true);
+              setUserId(session.user.id);
+              
+              // Use setTimeout to prevent potential Supabase deadlocks
+              setTimeout(async () => {
+                try {
+                  const { data: userData } = await supabase.auth.getUser();
+                  if (userData?.user) {
+                    // Convert old roles to new roles if necessary
+                    let role = userData.user.user_metadata.role;
+                    
+                    // Convert donor or recipient or both to user
+                    if (role === 'donor' || role === 'recipient' || role === 'both') {
+                      role = 'user';
+                    }
+                    
+                    setUserRole(role as UserRole);
+                  }
+                } catch (error) {
+                  console.error("Error getting user role:", error);
+                }
+              }, 0);
+            } else if (event === "SIGNED_OUT") {
+              setIsAuthenticated(false);
+              setUserRole(null);
+              setUserId(null);
+            }
+          }
+        );
+
+        // Then check for existing session
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking session:", error);
+          setAuthError(error.message);
+          setIsAuthenticated(false);
+          setUserRole(null);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data.session) {
+          setIsAuthenticated(true);
+          setUserId(data.session.user.id);
+          
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user) {
+            // Convert old roles to new roles if necessary
+            let role = userData.user.user_metadata.role;
+            
+            // Convert donor or recipient or both to user
+            if (role === 'donor' || role === 'recipient' || role === 'both') {
+              role = 'user';
+            }
+            
+            setUserRole(role as UserRole);
+          }
+        } else {
+          setIsAuthenticated(false);
+          setUserRole(null);
+          setUserId(null);
+        }
+      } catch (error) {
+        console.error("Error in session check:", error);
+        setIsAuthenticated(false);
+        setUserRole(null);
+        setUserId(null);
+      } finally {
+        setIsLoading(false);
       }
     };
     
-    checkSession();
-
-    // Auth state change subscription
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session) {
-          setIsAuthenticated(true);
-          setUserId(session.user.id);
-          getUserRole(session.user.id);
-        } else {
-          setIsAuthenticated(false);
-          setUserId(null);
-          setUserRole(null);
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    setupAuth();
   }, []);
-
-  const getUserRole = async (userId: string) => {
-    try {
-      // First check if there's a role in the metadata
-      const { data: userData } = await supabase.auth.getUser();
-      const metadataRole = userData?.user?.user_metadata?.role;
-      
-      if (metadataRole) {
-        setUserRole(metadataRole);
-        return;
-      }
-      
-      // If no role in metadata, check if user is a hospital
-      const { data: hospitalData } = await supabase.from("hospitals").select("*").eq("user_id", userId).single();
   
-      if (hospitalData) {
-        setUserRole("hospital");
-      } else {
-        // If no hospital found, check if the user is an admin
-        const { data: adminData, error: adminError } = await supabase.rpc('is_admin', { user_id: userId });
-        if (adminError) {
-          console.error("Error checking admin role:", adminError);
-          setUserRole("donor");
-          return;
-        }
-        if (adminData === true) {
-          setUserRole("admin");
-        } else {
-          setUserRole("donor");
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching user role:", error);
-      setUserRole("donor"); // Default to donor role
-    }
-  };
-
-  const login = async (email: string, password: string, role?: string): Promise<void> => {
-    setIsLoading(true);
+  const register = async (email: string, password: string, role: UserRole, metadata: any) => {
+    setAuthError(null);
+    
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setAuthError(error.message);
-        setIsAuthenticated(false);
-        setUserId(null);
-        setUserRole(null);
-      } else {
-        setAuthError(null);
-        setIsAuthenticated(true);
-        setUserId(data.user?.id);
-        
-        // Set role if provided during login
-        if (role) {
-          setUserRole(role);
-          
-          // Update user metadata with role
-          await supabase.auth.updateUser({
-            data: { role }
-          });
-        } else {
-          getUserRole(data.user?.id || '');
-        }
+      if (!supabase) {
+        const errMsg = "Supabase client is not initialized. Please check your configuration.";
+        setAuthError(errMsg);
+        toast.error(errMsg);
+        return false;
       }
-    } catch (error: any) {
-      setAuthError(error.message);
-      console.error("Login error:", error);
-      setIsAuthenticated(false);
-      setUserId(null);
-      setUserRole(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const register = async (email: string, password: string, role: string): Promise<void> => {
-    setIsLoading(true);
-    try {
+      const userMetadata = {
+        ...metadata,
+        role,
+      };
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            role: role,
-          },
+          data: userMetadata,
         },
       });
-
+      
       if (error) {
+        console.error("Registration error:", error);
         setAuthError(error.message);
-        setIsAuthenticated(false);
-        setUserId(null);
-        setUserRole(null);
-      } else {
-        setAuthError(null);
-        setIsAuthenticated(true);
-        setUserId(data.user?.id);
-        setUserRole(role);
+        toast.error(error.message);
+        return false;
       }
-    } catch (error: any) {
-      setAuthError(error.message);
+      
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        const errMsg = "This email is already registered. Please log in instead.";
+        setAuthError(errMsg);
+        toast.error(errMsg);
+        return false;
+      }
+      
+      toast.success("Registration successful! Please check your email for verification.");
+      return true;
+    } catch (error) {
       console.error("Registration error:", error);
-      setIsAuthenticated(false);
-      setUserId(null);
-      setUserRole(null);
-    } finally {
-      setIsLoading(false);
+      const errMsg = "An unexpected error occurred";
+      setAuthError(errMsg);
+      toast.error(errMsg);
+      return false;
     }
   };
 
-  const logout = async (): Promise<void> => {
-    setIsLoading(true);
+  const login = async (email: string, password: string, role: UserRole) => {
+    setAuthError(null);
+    
     try {
-      await supabase.auth.signOut();
-      setIsAuthenticated(false);
-      setUserId(null);
-      setUserRole(null);
-    } catch (error: any) {
-      console.error("Logout error:", error);
-    } finally {
-      setIsLoading(false);
+      if (!supabase) {
+        const errMsg = "Supabase client is not initialized. Please check your configuration.";
+        setAuthError(errMsg);
+        toast.error(errMsg);
+        return false;
+      }
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error("Login error:", error);
+        setAuthError(error.message);
+        toast.error(error.message);
+        return false;
+      }
+      
+      if (data.user) {
+        setIsAuthenticated(true);
+        
+        // Convert old roles to new role system
+        let userRole = data.user.user_metadata?.role;
+        if (userRole === 'donor' || userRole === 'recipient' || userRole === 'both') {
+          userRole = 'user';
+        }
+        
+        setUserRole(userRole as UserRole);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Login error:", error);
+      const errMsg = "An unexpected error occurred during login";
+      setAuthError(errMsg);
+      toast.error(errMsg);
+      return false;
     }
   };
-
+  
+  const logout = async () => {
+    try {
+      if (!supabase) {
+        const errMsg = "Supabase client is not initialized. Please check your configuration.";
+        setAuthError(errMsg);
+        toast.error(errMsg);
+        return;
+      }
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Logout error:", error);
+        setAuthError(error.message);
+        toast.error(error.message);
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(null);
+        setUserId(null);
+        toast.success("You've been logged out successfully");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      const errMsg = "An unexpected error occurred during logout";
+      setAuthError(errMsg);
+      toast.error(errMsg);
+    }
+  };
+  
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={{ isAuthenticated, userId, userRole, authError, isLoading, login, logout, register }}>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/register-hospital" element={<RegisterHospital />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/hospital-profile" element={<HospitalProfile />} />
-            <Route path="/find-donors" element={<FindDonors />} />
+      <TooltipProvider>
+        <AuthContext.Provider value={{
+          isAuthenticated,
+          userRole,
+          authError,
+          isLoading,
+          userId,
+          login,
+          register,
+          logout
+        }}>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/register-hospital" element={<RegisterHospital />} />
+              <Route path="/contact" element={<Contact />} />
+              
+              {/* Protected Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/request" element={
+                <ProtectedRoute>
+                  <RequestBlood />
+                </ProtectedRoute>
+              } />
+              <Route path="/donors" element={
+                <ProtectedRoute>
+                  <FindDonors />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
 
-            {/* Protected Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                isAuthenticated ? <Dashboard /> : <Navigate to="/login" />
-              }
-            />
-            <Route
-              path="/request"
-              element={
-                isAuthenticated ? <RequestBlood /> : <Navigate to="/login" />
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                isAuthenticated ? <Profile /> : <Navigate to="/login" />
-              }
-            />
-
-            {/* Hospital Routes */}
-            <Route 
-              path="/hospital/donors"
-              element={
-                isAuthenticated && userRole === "hospital" ? (
-                  <HospitalDonors />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-
-            {/* Admin Routes */}
-            <Route
-              path="/admin/hospitals"
-              element={
-                isAuthenticated && userRole === "admin" ? (
-                  <Hospitals />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/admin/donors"
-              element={
-                isAuthenticated && userRole === "admin" ? (
-                  <Donors />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/admin/blood-requests"
-              element={
-                isAuthenticated && userRole === "admin" ? (
-                  <BloodRequests />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/admin/blood-inventory"
-              element={
-                isAuthenticated && userRole === "admin" ? (
+              {/* Admin Routes */}
+              <Route path="/admin/inventory" element={
+                <AdminRoute>
                   <BloodInventory />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/admin/reports"
-              element={
-                isAuthenticated && userRole === "admin" ? (
+                </AdminRoute>
+              } />
+              <Route path="/admin/reports" element={
+                <AdminRoute>
                   <Reports />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-            <Route
-              path="/admin/settings"
-              element={
-                isAuthenticated && userRole === "admin" ? (
+                </AdminRoute>
+              } />
+              <Route path="/admin/settings" element={
+                <AdminRoute>
                   <Settings />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              }
-            />
-
-            {/* Fallback route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Router>
-        <Toaster />
-      </AuthContext.Provider>
+                </AdminRoute>
+              } />
+              <Route path="/admin/requests" element={
+                <AdminRoute>
+                  <BloodRequests />
+                </AdminRoute>
+              } />
+              <Route path="/admin/donors" element={
+                <AdminRoute>
+                  <Donors />
+                </AdminRoute>
+              } />
+              <Route path="/admin/hospitals" element={
+                <AdminRoute>
+                  <Hospitals />
+                </AdminRoute>
+              } />
+              
+              {/* Hospital Routes */}
+              <Route path="/hospital/inventory" element={
+                <HospitalRoute>
+                  <BloodInventory />
+                </HospitalRoute>
+              } />
+              <Route path="/hospital/reports" element={
+                <HospitalRoute>
+                  <Reports />
+                </HospitalRoute>
+              } />
+              <Route path="/hospital/requests" element={
+                <HospitalRoute>
+                  <BloodRequests />
+                </HospitalRoute>
+              } />
+              <Route path="/hospital/donors" element={
+                <HospitalRoute>
+                  <Donors />
+                </HospitalRoute>
+              } />
+              
+              {/* 404 Route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthContext.Provider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;

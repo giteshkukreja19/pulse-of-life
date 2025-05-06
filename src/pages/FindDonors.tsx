@@ -22,7 +22,7 @@ import {
   TableCell,
   TableCaption,
 } from "@/components/ui/table";
-import { useDonors, Donor } from "@/hooks/useDonors";
+import { useDonors } from "@/hooks/useDonors";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
@@ -44,25 +44,25 @@ const FindDonors = () => {
 
   // Filtering logic
   const filteredDonors = useMemo(() => {
-    let result = donors || [];
+    let result = donors;
     
     if (selectedBloodGroup !== "All") {
       result = result.filter(
-        (donor: Donor) => donor.blood_group?.toUpperCase() === selectedBloodGroup
+        (donor) => donor.blood_group?.toUpperCase() === selectedBloodGroup
       );
     }
     
     if (searchCity.trim()) {
       const searchTerm = searchCity.toLowerCase().trim();
-      result = result.filter((donor: Donor) =>
-        donor.location?.toLowerCase().includes(searchTerm)
+      result = result.filter((donor) =>
+        donor.location.toLowerCase().includes(searchTerm)
       );
     }
     
     return result;
   }, [donors, selectedBloodGroup, searchCity]);
 
-  const handleRequestDonation = (donorId: string, donorName: string | undefined, bloodGroup: string | undefined) => {
+  const handleRequestDonation = (donorId: string, donorName: string, bloodGroup: string) => {
     if (!isAuthenticated) {
       toast.error("Please log in to request blood donations");
       navigate("/login");
@@ -71,8 +71,8 @@ const FindDonors = () => {
 
     // Store donor information in session storage to pre-fill the request form
     sessionStorage.setItem("requestedDonorId", donorId);
-    sessionStorage.setItem("requestedDonorName", donorName || "");
-    sessionStorage.setItem("requestedBloodGroup", bloodGroup || "");
+    sessionStorage.setItem("requestedDonorName", donorName);
+    sessionStorage.setItem("requestedBloodGroup", bloodGroup);
     
     navigate("/request");
     toast.success(`Creating a request for ${donorName} with ${bloodGroup} blood group`);
@@ -176,7 +176,7 @@ const FindDonors = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredDonors.map((donor: Donor) => (
+                    {filteredDonors.map((donor) => (
                       <TableRow key={donor.id}>
                         <TableCell className="font-medium">{donor.name}</TableCell>
                         <TableCell className="font-semibold text-blood">{donor.blood_group}</TableCell>
