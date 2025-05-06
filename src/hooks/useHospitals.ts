@@ -72,14 +72,12 @@ export const useHospitalProfile = (userId: string | null) => {
   });
 };
 
-// Function to update hospital inventory
+// Function to update hospital inventory - simplified version that doesn't rely on non-existent tables
 export const updateHospitalInventory = async (hospitalId: string, bloodGroup: string, units: number, operation: 'add' | 'remove') => {
   try {
+    // This is a placeholder function since the blood_inventory table might not exist after reversion
     // In a real implementation, you would first check if the inventory exists for this hospital and blood group
     // Then update it or create a new one if it doesn't exist
-    
-    // This is a placeholder. In a production app, you would have a blood_inventory table
-    // For now, we'll simply show a success message
     
     toast.success(`Successfully ${operation === 'add' ? 'added' : 'removed'} ${units} units of ${bloodGroup}`);
     return true;

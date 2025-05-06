@@ -10,7 +10,7 @@ import { useHospitalProfile } from "@/hooks/useHospitals";
 
 const HospitalProfilePage = () => {
   const { userId, isAuthenticated } = useContext(AuthContext);
-  const { data: profile } = useHospitalProfile(userId);
+  const { data: profile, isLoading } = useHospitalProfile(userId);
   
   if (!isAuthenticated) {
     return (

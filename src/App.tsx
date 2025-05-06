@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, createContext } from "react";
 import {
   BrowserRouter as Router,
@@ -49,27 +50,36 @@ function App() {
   const queryClient = new QueryClient();
 
   useEffect(() => {
-    const session = supabase.auth.getSession();
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.session) {
+    // Fix for Session issue - using async/await pattern
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data && data.session) {
         setIsAuthenticated(true);
-        setUserId(session.session.user.id);
-        getUserRole(session.session.user.id);
-      } else {
-        setIsAuthenticated(false);
-        setUserId(null);
-        setUserRole(null);
+        setUserId(data.session.user.id);
+        getUserRole(data.session.user.id);
       }
-    });
+    };
+    
+    checkSession();
 
-    if (session) {
-      setIsAuthenticated(true);
-      setUserId(session.data.session?.user.id || null);
-      if (session.data.session?.user.id) {
-        getUserRole(session.data.session?.user.id);
+    // Auth state change subscription
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          setIsAuthenticated(true);
+          setUserId(session.user.id);
+          getUserRole(session.user.id);
+        } else {
+          setIsAuthenticated(false);
+          setUserId(null);
+          setUserRole(null);
+        }
       }
-    }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const getUserRole = async (userId: string) => {
@@ -110,11 +120,13 @@ function App() {
         setIsAuthenticated(false);
         setUserId(null);
         setUserRole(null);
+        return false;
       } else {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
         getUserRole(data.user?.id || '');
+        return true;
       }
     } catch (error: any) {
       setAuthError(error.message);
@@ -122,6 +134,7 @@ function App() {
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
+      return false;
     }
   };
 
@@ -142,11 +155,13 @@ function App() {
         setIsAuthenticated(false);
         setUserId(null);
         setUserRole(null);
+        return false;
       } else {
         setAuthError(null);
         setIsAuthenticated(true);
         setUserId(data.user?.id);
         getUserRole(data.user?.id || '');
+        return true;
       }
     } catch (error: any) {
       setAuthError(error.message);
@@ -154,6 +169,7 @@ function App() {
       setIsAuthenticated(false);
       setUserId(null);
       setUserRole(null);
+      return false;
     }
   };
 

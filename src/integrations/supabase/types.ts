@@ -9,6 +9,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      blood_inventory: {
+        Row: {
+          blood_group: string
+          hospital_id: string
+          id: string
+          units: number
+          updated_at: string | null
+        }
+        Insert: {
+          blood_group: string
+          hospital_id: string
+          id?: string
+          units?: number
+          updated_at?: string | null
+        }
+        Update: {
+          blood_group?: string
+          hospital_id?: string
+          id?: string
+          units?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_inventory_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blood_requests: {
         Row: {
           blood_group: string
@@ -103,6 +135,7 @@ export type Database = {
         Row: {
           contact_person: string
           created_at: string | null
+          description: string | null
           email: string
           id: string
           location: string
@@ -115,6 +148,7 @@ export type Database = {
         Insert: {
           contact_person: string
           created_at?: string | null
+          description?: string | null
           email: string
           id?: string
           location: string
@@ -127,6 +161,7 @@ export type Database = {
         Update: {
           contact_person?: string
           created_at?: string | null
+          description?: string | null
           email?: string
           id?: string
           location?: string
