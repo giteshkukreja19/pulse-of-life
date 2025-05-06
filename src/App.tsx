@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, createContext } from "react";
 import {
   BrowserRouter as Router,
@@ -30,6 +29,7 @@ import Settings from "./pages/admin/Settings";
 import NotFound from "./pages/NotFound";
 import Help from "./pages/Help";
 import HospitalProfile from "./pages/HospitalProfile";
+import HospitalDonors from "./pages/hospital/HospitalDonors";
 
 // Define AuthContext
 export const AuthContext = createContext({
@@ -239,14 +239,24 @@ function App() {
             />
             <Route
               path="/find-donors"
-              element={
-                isAuthenticated ? <FindDonors /> : <Navigate to="/login" />
-              }
+              element={<FindDonors />}
             />
             <Route
               path="/profile"
               element={
                 isAuthenticated ? <Profile /> : <Navigate to="/login" />
+              }
+            />
+
+            {/* Hospital Routes */}
+            <Route 
+              path="/hospital/donors"
+              element={
+                isAuthenticated && userRole === "hospital" ? (
+                  <HospitalDonors />
+                ) : (
+                  <Navigate to="/login" />
+                )
               }
             />
 

@@ -7,24 +7,32 @@ export const useDonors = () => {
   const query = useQuery({
     queryKey: ["donors"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("donors")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching donors:", error);
+      try {
+        const { data, error } = await supabase
+          .from("donors")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (error) {
+          console.error("Error fetching donors:", error);
+          throw error;
+        }
+        
+        // Handle case where data is null
+        return data || [];
+      } catch (error) {
+        console.error("Failed to fetch donors:", error);
         throw error;
       }
-      
-      return data || [];
     },
   });
 
   useEffect(() => {
     // Setup realtime updates with proper channel naming
+    const channelId = `donors-realtime-changes-${Math.random().toString(36).substring(2, 8)}`;
+    
     const channel = supabase
-      .channel("donors-realtime-changes")
+      .channel(channelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "donors" },
@@ -35,11 +43,11 @@ export const useDonors = () => {
         }
       )
       .subscribe((status) => {
-        console.log("Donors realtime subscription status:", status);
+        console.log(`Donors realtime subscription status (${channelId}):`, status);
       });
 
     return () => {
-      console.log("Unsubscribing from donors realtime updates");
+      console.log(`Unsubscribing from donors realtime updates (${channelId})`);
       supabase.removeChannel(channel);
     };
   }, [query]);

@@ -44,7 +44,7 @@ const FindDonors = () => {
 
   // Filtering logic
   const filteredDonors = useMemo(() => {
-    let result = donors;
+    let result = donors || [];
     
     if (selectedBloodGroup !== "All") {
       result = result.filter(
@@ -55,7 +55,7 @@ const FindDonors = () => {
     if (searchCity.trim()) {
       const searchTerm = searchCity.toLowerCase().trim();
       result = result.filter((donor) =>
-        donor.location.toLowerCase().includes(searchTerm)
+        donor.location?.toLowerCase().includes(searchTerm)
       );
     }
     
